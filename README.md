@@ -1,75 +1,81 @@
-# 🌌 VEILBOUND 2 — Complete Sequel-Level Overhaul
+# 🌌 VEILBOUND 2.1 — Complete Game Overhaul
 
-[![Live Demo](https://img.shields.io/badge/PLAY%20NOW-Veilbound%202%20Live-f59e0b?style=for-the-badge&logo=googlechrome&logoColor=white)](https://dipidyl.github.io/veilbound/)
+[![Live Demo](https://img.shields.io/badge/PLAY%20NOW-Veilbound%202.1%20Live-f59e0b?style=for-the-badge&logo=googlechrome&logoColor=white)](https://dipidyl.github.io/veilbound/)
 [![Build Status](https://img.shields.io/badge/Build-Passing-emerald?style=for-the-badge)](https://github.com/DiPiDyl/veilbound/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 > *"Reality is a tapestry; you only need to pull the right thread."*  
 > — Lyra Voss, The Veilwalker
 
-### 🎮 **[CLICK HERE TO PLAY VEILBOUND 2 NOW IN YOUR BROWSER](https://dipidyl.github.io/veilbound/)**
+### 🎮 **[CLICK HERE TO PLAY VEILBOUND 2.1 LIVE IN YOUR BROWSER](https://dipidyl.github.io/veilbound/)**
 
-**VEILBOUND 2** is a monumental sequel-level transformation of the digital collectible card game built around planar reality shifts, temporal echo cascades, and autonomous AI combat. Experience a genuine competitive experience featuring a **10-Player Auto-Battler**, **Real Enemy AI Decision Engine**, **Handcrafted Tactical Puzzles**, **Structured Planar Progression**, and **Distinct Frame Art Directions**.
+**VEILBOUND 2.1** is a polished, cartoon-fantasy collectible card game built around supernatural planar shifts, temporal echo cascades, and autonomous AI combat. Experience an immediate, accessible, yet strategically deep competitive card game featuring an **8-Player Auto-Battler**, **Real Enemy AI Decision Engine**, **45-Second Synced Turn Timer**, **Cinematic Battle Intros**, **Active Binder & Active Deck System**, and **Handcrafted Tactical Puzzles**.
 
 ---
 
-## 🚀 What's New in VEILBOUND 2?
+## 🌟 Core Pillars & Key Features
 
-### 1. ⚔️ Real Enemy AI Decision Engine & Live Debug Inspector
-No random button-clicking or canned scripts. The AI in VEILBOUND 2 is powered by an autonomous utility-scoring decision matrix:
-- **Lethal Calculation**: Evaluates immediate board and hand combinations to finish off heroes.
-- **High-Value Trading**: Quantifies minion trades using effective health, attack ratios, and keyword threats (Divine Shield, Lifesteal, Poison).
-- **Face Aggression**: Pushes deliberate face damage when ahead on tempo or racing against control archetypes.
-- **Mana-Curve Summons**: Prioritizes curve plays, synergies, and hero powers before passing.
-- **Deliberate Visual Pacing**: Actions execute one-by-one with 850ms cadence, complete with audio cues, damage flashes, and combat log entries.
-- **AI Debug Inspector**: Open the in-game inspector during any match to view candidate actions, utility scores, and exact reasoning.
-- **Automated AI Test Suite**: Includes 5 verified automated test benchmarks (Attack Ready Minions, Direct Face Attack, Favorable Minion Trade, Lethal Calculation, Clean Turn Ending) plus a 100% autonomous 30-turn AI vs AI match simulation.
+### 1. ⚔️ 45-Second Real-Time Synced Turn Timer
+- **Urgent & Synchronized**: Both player and enemy turns count down from 45 seconds in real time.
+- **Urgency Cues**: Visual shifts and audible pulses at 10 seconds, with critical alarms and red visual shakes at 5 and 3 seconds.
+- **Strict Turn Enforcement**: When the timer reaches 0, turns automatically end immediately.
+- **AI Makes Decisions Under the Timer**: The AI does not stall or wait indefinitely; it computes candidate moves and attacks dynamically *while* its 45-second timer runs.
 
-### 2. 🏆 Veilbound Battlegrounds (10-Player Auto-Battler)
-A completely overhauled competitive auto-battler mode replacing legacy sequential combat:
-- **10 Participants**: You face 9 autonomous AI players in a persistent lobby with live health tracking, placement calculation, and eliminations.
-- **The Rift Market**: Economy built on planar **Shards** — recruit units for 3 Shards, sell/release for 1 rebate, refresh for 1, freeze/lock tavern rolls, and level up your Tavern Tier from 1 to 6.
-- **6 Battlegrounds Factions**:
-  - 🌿 *Thornbloom*: Deathrattle token swarms and battlefield overgrowth.
-  - 🔥 *Ashforged*: Retaliation damage, slag armor, and explosive burst.
-  - 💀 *Wraithkin*: Reborn units, spectral thralls, and soul harvest scaling.
-  - ⭐ *Starborn*: Radiant divine shields and celestial starfire.
-  - ⚙️ *Clockwork*: Scaled stat ramp and mechanized attack recursion.
-  - 🌀 *Riftborn*: Random planar spells, stat morphs, and reality rifts.
-- **Tactical Left-to-Right Combat**: Deterministic auto-combat respecting positioning order, Taunt barriers, Divine Shields, and Reborns.
-- **The Final Duel**: Dramatic cinematic confrontation when only two survivors remain.
+### 2. 🎬 Cinematic Battle Intro Animation (3–6s)
+- **Living Presentation**: Before Turn 1 begins, an environmental sequence pans through the battlefield.
+- **Character Entrances**: Signature entry effects for each Binder:
+  - *Lyra Voss*: Cosmic portal with arcane geometry.
+  - *Kael Drake*: Molten embers, heavy shield impacts, and smoke.
+  - *Mira Thorn*: Bioluminescent spore blooms and emergent vines.
+  - *Nox*: Spectral mist and pale ghost apparitions.
+  - *Orin Vale*: Floating grimoires and bronze clockwork machinery.
+  - *Seraphine*: Celestial starburst and golden constellation rings.
+- **Energy Clash**: Central versus confrontation shockwave before settling seamlessly onto the battlefield.
 
-### 3. 🧩 Veilbound Tactical Puzzles (6 Handcrafted Chapters)
-Test your card mastery in bespoke single-turn planar brain teasers:
-- **Chapter 1: The First Echo** — Master mana curve, charge strikes, and basic damage math.
-- **Chapter 2: Through the Veil** — Exploit Wild and Corrupted reality shifts to amplify spell thresholds.
-- **Chapter 3: The Broken Clock** — Overcome impassable Taunt walls with temporal repositioning and charge rushes.
-- **Chapter 4: Garden of Giants** — Defeat colossal behemoths using poisonous sporelings and divine shield pops.
-- **Chapter 5: The Hollow Star** — Navigate sacrificial deathrattle cascades to discover surprise lethal lines.
-- **Chapter 6: The Final Rift** — The ultimate 1-turn puzzle requiring multi-step echo combos and perfect sequencing.
-- Earn 1 to 3 stars, utilize dynamic hints, reset instantly, and claim gold/essence rewards upon completion.
+### 3. 👥 Active Binder & Active Deck Flow
+- **No Tedious Menus**: The player chooses their **Active Binder** in the Collection and marks their **Active Deck** in the Deck Builder.
+- **Instant Matchmaking**: Clicking **Launch 1v1 Duel** instantly matches against a diverse AI Binder, deck, and battlefield, leaping straight into battle without repetitive pre-match configuration dialogs.
 
-### 4. 📈 Structured Planar Progression & Milestone Unlocks
-No overwhelming feature overload on day one. Beginners embark on a rewarding onboarding journey:
-- **Level 1 (Planar Initiate)**: Start with Binder *Lyra Voss*, the Aetherbound starter deck, and core 1v1 duels.
-- **Level 2 (Archivist Apprentice)**: Unlock the **Collection Vault** and **Deck Builder** (+100 Gold, +50 Essence).
-- **Level 3 (Flamebound Disciple)**: Unlock Binder *Kael Drake* (Ashen Citadel) and the **Card Workshop** (+150 Gold, +75 Essence).
-- **Level 4 (Relic Seeker)**: Unlock Binder *Mira Thorn* (Viridian Hive) and **Booster Packs** (+200 Gold, +100 Essence).
-- **Level 5 (Tactical Mind)**: Unlock Binder *Orin Vale* (Chronocast Archive) and **Tactical Puzzles** (+250 Gold, +125 Essence).
-- **Level 6 (Arena Gladiator)**: Unlock Binder *Nox* (Umbral Remnant) and **Veilbound Battlegrounds** (+300 Gold, +150 Essence).
-- **Level 7 (Ascended Sovereign)**: Unlock Binder *Seraphine* (Astral Ascendancy) and **The Veil Expedition** (+500 Gold, +250 Essence).
-- Features celebratory confetti-filled level-up modals with immediate reward payouts.
+### 4. 🔓 Mode Access vs. Progressive Content (No Mode Level-Locks)
+- **All Core Modes Unlocked Immediately**:
+  - `1V1 Classic Duel`
+  - `Veilbound Battlegrounds`
+  - `The Veil Expedition`
+  - `Tactical Puzzles`
+  - `Collection Vault`
+  - `Deck Builder`
+  - `Card Workshop`
+  - `The Veilbound Codex`
+- **Curated Starter Progression**: Players start with Binder *Lyra Voss*, a starter deck, and a curated starter collection (~26 cards). Undiscovered cards appear as mysterious darkened silhouettes to uncover via booster packs, rewards, and planar progression.
 
-### 5. 🎨 Distinct Card Framing & Battlefield VFX
-Every card type now possesses a bespoke visual silhouette:
-- **Minions**: Classical planar portal frame with tribal ribbons.
-- **Spells**: Arcanum circular parchment with incantation runes.
-- **Relics**: Ancient runic pedestal with shimmering crystalline core.
-- **Weapons**: Forged metallic angular framing with blade bevels.
-- **Rituals**: Chrono-hourglass border with countdown charge pips.
-- **Events**: Celestial cosmic banner with sweeping environmental glows.
-- **Champions**: Ornate gold-leaf regal heraldry.
-- **Combat Feel**: Floating damage numerals, screen shakes, and audible strike impacts for every clash.
+### 5. 🏆 Veilbound Battlegrounds (8 Players: 1 Human + 7 AI)
+- **8 Total Combatants**: 1 human player against 7 distinct AI opponents with bespoke strategies and favored archetypes:
+  - 🔮 *The Collector* (Riftborn / steals & discovers)
+  - 🌿 *The Garden Mind* (Thornbloom swarm & deathrattles)
+  - ⚙️ *The Clockmaker* (Clockwork stat growth & delays)
+  - ⭐ *The Star Eater* (Starborn divine shields)
+  - 💀 *The Hollow King* (Wraithkin death & sacrifices)
+  - 🪞 *The Mirror* (Adaptive mimic)
+  - 🔥 *Ashen Warlord* (Ashforged retaliation & armor)
+- **Fast Rounds**: 45-second preparation timer in the Rift Market, snappy 20–45s auto-combat, and a cinematic **Final Duel** when two combatants remain.
+
+### 6. 📦 Suspenseful One-by-One Pack Opening
+- **Authentic Physical Anticipation**: Packs tear open with particle bursts. Cards are revealed individually face-down with 3D hover depth.
+- **Dramatic Rarity Flares**: Click each card to flip and trigger sound chimes and rarity glows. Mythic pulls unleash full-screen celestial planar distortion effects.
+
+### 7. 🧪 Creative Card Workshop
+- **Fun Creative Toys**: Features **Randomize**, **Surprise Me**, **Remix**, and **Duplicate** buttons that dynamically synthesize creative cards.
+- **Live Sandbox Arena**: Click *Playtest in Sandbox* to immediately battle an automated Target Dummy with live combat logging, custom starting mana, and manual Veil controls.
+
+### 8. 🛠️ Dedicated Admin Console
+- **Development Secret**: Accessible via unobtrusive system terminal icon in the top bar or hotkey `Ctrl + Shift + A`.
+- **Authorization**: Configured with the standard development code `Admin123`.
+- **Admin Tools**:
+  - *Player Data & Currency*: Inspect & grant Gold/Essence, set level, grant XP, or wipe account to fresh default.
+  - *Collection*: Search & grant any card, unlock all 130+ cards.
+  - *Binders*: Unlock any/all Binders, change active Binder.
+  - *Game Modes*: Mark all puzzle chapters solved (3 stars).
+  - *Combat Debugger*: Run autonomous AI vs AI 30-turn battle simulations.
 
 ---
 
@@ -83,28 +89,6 @@ Every card type now possesses a bespoke visual silhouette:
 | **Nox** | The Revenant | *Umbral Remnant* | Spectral thralls, sacrifice rites, grave recursion, and harvesting dead souls (*Hero Ability: Soul Harvest*). |
 | **Orin Vale** | The Archivist | *Chronocast Archive* | Delayed countdown rituals, temporal forecasting, card discovery, and clockwork automatons (*Hero Ability: Chrono Index*). |
 | **Seraphine** | The Starforged | *Astral Ascendancy* | Radiant divine shields, celestial board clears, ramp, and majestic constellation titans (*Hero Ability: Radiant Beacon*). |
-
----
-
-## 🗺️ Game Modes Summary
-
-| Mode | Format | Description |
-| :--- | :--- | :--- |
-| **1v1 Quick Duel** | Standard CCG Duel | Face an autonomous AI opponent across custom battlefields with 3 difficulty settings and real-time AI inspector. |
-| **Battlegrounds** | 10-Player Auto-Battler | Recruit from the Rift Market, trigger 6 faction synergies, and battle through rounds until the Final Duel. |
-| **Tactical Puzzles** | Lethal Puzzles | 6 handcrafted chapters of lethal puzzles challenging your sequencing and rules comprehension. |
-| **The Veil Expedition** | Roguelite Dungeon Run | Procedurally generated node map featuring combat encounters, narrative dilemma events, and 6 Archon bosses. |
-| **Card Workshop** | Creative Sandbox | 4-step card synthesis engine allowing you to forge custom cards and immediately playtest them in a live sandbox arena. |
-| **Relic Vault** | Booster Opening | Realistic 3D card pack opening with seal tearing, rarity glows, and collection unlocking. |
-
----
-
-## 🛠️ Technology Stack & Architecture
-
-- **Engine**: Pure deterministic TypeScript state engine with zero external game engine bloat.
-- **UI Framework**: React 18, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti.
-- **Audio Synthesizer**: Zero-dependency Web Audio API procedural sound engine with realistic spatial clicks, swooshes, impacts, and fanfares.
-- **Hosting**: GitHub Pages via automated GitHub Actions CI/CD pipeline.
 
 ---
 

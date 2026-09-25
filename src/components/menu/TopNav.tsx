@@ -3,7 +3,7 @@ import {
   Sparkles, Swords, Compass, Layers, Wrench, 
   Package, User, Volume2, VolumeX, BookOpen, 
   Settings as SettingsIcon, Coins, Gem, Trophy, 
-  Puzzle, Lock 
+  Puzzle, Lock, Shield 
 } from 'lucide-react';
 import { audio } from '../../services/audioService';
 import { PlayerProgressionState, UnlockableFeature, ProgressionService } from '../../services/progressionService';
@@ -29,6 +29,7 @@ interface TopNavProps {
   onOpenSettings: () => void;
   onOpenTutorial: () => void;
   onOpenCodex: () => void;
+  onOpenAdmin?: () => void;
   progression: PlayerProgressionState;
 }
 
@@ -42,23 +43,22 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenSettings,
   onOpenTutorial,
   onOpenCodex,
+  onOpenAdmin,
   progression
 }) => {
   const tabs: { 
     id: NavTab; 
     label: string; 
     icon: React.ReactNode; 
-    requiredFeature?: UnlockableFeature; 
-    minLevel?: number 
   }[] = [
     { id: 'PLAY', label: 'Play', icon: <Swords className="w-4 h-4" /> },
-    { id: 'BATTLEGROUNDS', label: 'Battlegrounds', icon: <Trophy className="w-4 h-4 text-amber-400" />, requiredFeature: 'BATTLEGROUNDS', minLevel: 6 },
-    { id: 'PUZZLES', label: 'Puzzles', icon: <Puzzle className="w-4 h-4 text-purple-400" />, requiredFeature: 'PUZZLES', minLevel: 5 },
-    { id: 'EXPEDITION', label: 'Expedition', icon: <Compass className="w-4 h-4 text-sky-400" />, requiredFeature: 'EXPEDITION', minLevel: 7 },
-    { id: 'COLLECTION', label: 'Collection', icon: <Layers className="w-4 h-4" />, requiredFeature: 'COLLECTION', minLevel: 2 },
-    { id: 'DECKS', label: 'Decks', icon: <Layers className="w-4 h-4" />, requiredFeature: 'DECKS', minLevel: 2 },
-    { id: 'CARD LAB', label: 'Card Lab', icon: <Wrench className="w-4 h-4" />, requiredFeature: 'CARD_LAB', minLevel: 3 },
-    { id: 'PACKS', label: 'Packs', icon: <Package className="w-4 h-4" />, requiredFeature: 'PACKS', minLevel: 4 },
+    { id: 'BATTLEGROUNDS', label: 'Battlegrounds', icon: <Trophy className="w-4 h-4 text-amber-400" /> },
+    { id: 'PUZZLES', label: 'Puzzles', icon: <Puzzle className="w-4 h-4 text-purple-400" /> },
+    { id: 'EXPEDITION', label: 'Expedition', icon: <Compass className="w-4 h-4 text-sky-400" /> },
+    { id: 'COLLECTION', label: 'Collection', icon: <Layers className="w-4 h-4" /> },
+    { id: 'DECKS', label: 'Decks', icon: <Layers className="w-4 h-4" /> },
+    { id: 'CARD LAB', label: 'Card Workshop', icon: <Wrench className="w-4 h-4" /> },
+    { id: 'PACKS', label: 'Packs', icon: <Package className="w-4 h-4" /> },
     { id: 'PROFILE', label: 'Profile', icon: <User className="w-4 h-4" /> }
   ];
 
@@ -94,27 +94,19 @@ export const TopNav: React.FC<TopNavProps> = ({
       <nav className="flex items-center gap-1 overflow-x-auto max-w-2xl py-1">
         {tabs.map((tab) => {
           const isActive = currentTab === tab.id;
-          const isUnlocked = !tab.requiredFeature || ProgressionService.isFeatureUnlocked(progression, tab.requiredFeature);
 
           return (
             <button
               key={tab.id}
               onClick={() => {
-                if (isUnlocked) {
-                  audio.playClick();
-                  onSelectTab(tab.id);
-                } else {
-                  audio.playClick();
-                  alert(`🔒 ${tab.label} unlocks at Player Level ${tab.minLevel}! Win 1v1 duels to earn XP and level up.`);
-                }
+                audio.playClick();
+                onSelectTab(tab.id);
               }}
               className={`
                 px-3 py-1.5 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider
                 flex items-center gap-1.5 transition-all duration-200 whitespace-nowrap
                 ${
-                  !isUnlocked
-                    ? 'opacity-40 text-slate-500 cursor-not-allowed hover:opacity-60'
-                    : isActive
+                  isActive
                     ? 'bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)] scale-105'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
                 }
@@ -122,7 +114,6 @@ export const TopNav: React.FC<TopNavProps> = ({
             >
               {tab.icon}
               <span>{tab.label}</span>
-              {!isUnlocked && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
             </button>
           );
         })}
@@ -183,6 +174,20 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <SettingsIcon className="w-4 h-4" />
         </button>
+
+        {/* Discreet Admin Entry Point */}
+        {onOpenAdmin && (
+          <button
+            onClick={() => {
+              audio.playClick();
+              onOpenAdmin();
+            }}
+            className="p-1.5 rounded-lg text-slate-700 hover:text-amber-400 transition-colors opacity-60 hover:opacity-100"
+            title="System Terminal"
+          >
+            <Shield className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </header>
   );

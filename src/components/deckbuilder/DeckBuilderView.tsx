@@ -14,6 +14,8 @@ import {
 interface DeckBuilderViewProps {
   decks: DeckDefinition[];
   collection: Record<string, number>;
+  activeDeckId?: string;
+  onSetActiveDeck?: (deckId: string) => void;
   onSaveDeck: (deck: DeckDefinition) => void;
   onDeleteDeck: (deckId: string) => void;
 }
@@ -21,6 +23,8 @@ interface DeckBuilderViewProps {
 export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({
   decks,
   collection,
+  activeDeckId,
+  onSetActiveDeck,
   onSaveDeck,
   onDeleteDeck
 }) => {
@@ -106,16 +110,36 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                  <button
-                    onClick={() => {
-                      audio.playClick();
-                      onDeleteDeck(deck.id);
-                    }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-950/40 transition-colors"
-                    title="Delete Deck"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        audio.playClick();
+                        onDeleteDeck(deck.id);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                      title="Delete Deck"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    {activeDeckId === deck.id ? (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 shadow">
+                        <Check className="w-3 h-3" /> Active Deck
+                      </span>
+                    ) : (
+                      onSetActiveDeck && (
+                        <button
+                          onClick={() => {
+                            audio.playClick();
+                            onSetActiveDeck(deck.id);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors"
+                        >
+                          Set Active
+                        </button>
+                      )
+                    )}
+                  </div>
 
                   <button
                     onClick={() => {

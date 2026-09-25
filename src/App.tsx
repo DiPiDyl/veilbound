@@ -28,6 +28,9 @@ import { FreeForAllOpponent } from './data/freeForAllEnemies';
 import { audio } from './services/audioService';
 import { ProgressionService, PlayerProgressionState } from './services/progressionService';
 import { LevelMilestone } from './types/progression';
+import { AdminLoginModal } from './components/admin/AdminLoginModal';
+import { AdminPanelModal } from './components/admin/AdminPanelModal';
+import { BATTLEFIELDS } from './data/battlefields';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<StorageData>(loadGameData);
@@ -37,10 +40,26 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isMatchmaking, setIsMatchmaking] = useState(false);
+  const [matchedOpponentName, setMatchedOpponentName] = useState<string | null>(null);
 
   // Progression & Milestones
   const [progression, setProgression] = useState<PlayerProgressionState>(() => ProgressionService.loadProgression());
   const [pendingMilestone, setPendingMilestone] = useState<LevelMilestone | null>(null);
+
+  // Ctrl+Shift+A hotkey for admin console
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setIsAdminLoginOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Free-For-All Gauntlet persistent stage
   const [freeForAllStage, setFreeForAllStage] = useState<number>(() => {
@@ -100,6 +119,40 @@ export const App: React.FC = () => {
 
     setActiveMatch(match);
     setIsQuickBattleOpen(false);
+  };
+
+  // Launch Quick 1v1 with Active Binder & Active Deck against random appropriate opponent
+  const handleLaunchQuick1v1 = () => {
+    audio.playClick();
+    const activeBinderId = data.profile.activeBinderId || 'lyra-voss';
+    const activeDeckId = data.profile.activeDeckId || data.decks[0]?.id;
+    const playerBinder = getBinderById(activeBinderId);
+    const playerDeck = data.decks.find((d) => d.id === activeDeckId) || data.decks[0];
+    const playerDeckCards = getDeckCards(playerDeck);
+
+    // Pick random different opponent
+    const possibleOpponents = BINDERS.filter((b) => b.id !== activeBinderId);
+    const opponentBinder = possibleOpponents[Math.floor(Math.random() * possibleOpponents.length)] || BINDERS[1];
+    const oppDeckDef = data.decks.find((d) => d.binderId === opponentBinder.id) || data.decks[0];
+    const oppDeckCards = getDeckCards(oppDeckDef);
+
+    const battlefield = BATTLEFIELDS[Math.floor(Math.random() * BATTLEFIELDS.length)].id;
+
+    setMatchedOpponentName(`${opponentBinder.name} • ${opponentBinder.title}`);
+    setIsMatchmaking(true);
+
+    setTimeout(() => {
+      const match = createInitialMatch(
+        playerBinder,
+        playerDeckCards,
+        opponentBinder,
+        oppDeckCards,
+        battlefield
+      );
+      setIsMatchmaking(false);
+      setMatchedOpponentName(null);
+      setActiveMatch(match);
+    }, 1100);
   };
 
   // Progression helper
@@ -377,6 +430,27 @@ export const App: React.FC = () => {
 
   return (
     <div className={`w-screen h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden ${data.settings.highContrast ? 'contrast-125' : ''}`}>
+      {/* Matchmaking Overlay Banner */}
+      {isMatchmaking && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 select-none animate-fadeIn">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-16 h-16 rounded-full border-4 border-amber-400 border-t-transparent animate-spin mb-2" />
+            <span className="text-xs font-mono font-bold tracking-widest uppercase text-amber-400">
+              SEARCHING PLANAR REALM • MATCHMAKING
+            </span>
+            <h2 className="text-2xl font-cinzel font-black text-slate-100">
+              Opponent Found!
+            </h2>
+            <p className="text-sm font-cinzel text-amber-300 font-bold">
+              {matchedOpponentName}
+            </p>
+            <span className="text-[11px] text-slate-400 font-mono mt-2">
+              Preparing Battlefield...
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Global Navigation Header */}
       <TopNav
         currentTab={currentTab}
@@ -395,6 +469,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onOpenCodex={() => setIsCodexOpen(true)}
+        onOpenAdmin={() => setIsAdminLoginOpen(true)}
         progression={progression}
       />
 
@@ -402,7 +477,7 @@ export const App: React.FC = () => {
       <main className="flex-1 overflow-hidden relative">
         {currentTab === 'PLAY' && (
           <PlayHubView
-            onOpenQuickBattle={() => setIsQuickBattleOpen(true)}
+            onOpenQuickBattle={handleLaunchQuick1v1}
             onNavigateTab={setCurrentTab}
             onOpenCodex={() => setIsCodexOpen(true)}
             progression={progression}
@@ -431,6 +506,15 @@ export const App: React.FC = () => {
           <CollectionView
             collection={data.collection}
             essence={data.profile.essence}
+            activeBinderId={data.profile.activeBinderId || 'lyra-voss'}
+            unlockedBinderIds={data.profile.unlockedBinderIds || ['lyra-voss']}
+            discoveredCardIds={data.profile.discoveredCardIds || []}
+            onSetActiveBinder={(bId) => {
+              updateData((prev) => ({
+                ...prev,
+                profile: { ...prev.profile, activeBinderId: bId }
+              }));
+            }}
             onCraftCard={handleCraftCard}
             onDisenchantCard={handleDisenchantCard}
           />
@@ -440,6 +524,13 @@ export const App: React.FC = () => {
           <DeckBuilderView
             decks={data.decks}
             collection={data.collection}
+            activeDeckId={data.profile.activeDeckId || data.decks[0]?.id}
+            onSetActiveDeck={(dId) => {
+              updateData((prev) => ({
+                ...prev,
+                profile: { ...prev.profile, activeDeckId: dId }
+              }));
+            }}
             onSaveDeck={handleSaveDeck}
             onDeleteDeck={handleDeleteDeck}
           />
@@ -482,7 +573,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Quick Battle Configuration Modal */}
+      {/* Quick Battle Configuration Modal (Available as optional dev fallback) */}
       <QuickBattleModal
         isOpen={isQuickBattleOpen}
         onClose={() => setIsQuickBattleOpen(false)}
@@ -517,6 +608,26 @@ export const App: React.FC = () => {
       <UnlockNotificationModal
         milestone={pendingMilestone}
         onDismiss={() => setPendingMilestone(null)}
+      />
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={isAdminLoginOpen}
+        onClose={() => setIsAdminLoginOpen(false)}
+        onLoginSuccess={() => {
+          setIsAdminLoginOpen(false);
+          setIsAdminPanelOpen(true);
+        }}
+      />
+
+      {/* Admin Management Console */}
+      <AdminPanelModal
+        isOpen={isAdminPanelOpen}
+        onClose={() => setIsAdminPanelOpen(false)}
+        storageData={data}
+        progression={progression}
+        onUpdateStorage={updateData}
+        onUpdateProgression={(updater) => setProgression((prev) => updater(prev))}
       />
     </div>
   );

@@ -2,13 +2,21 @@ import React, { useState } from 'react';
 import { Card, CardRarity, FactionId, CardType } from '../../types/card';
 import { ALL_CARDS, getCardById } from '../../data/cards';
 import { FACTIONS } from '../../data/factions';
+import { BINDERS, getBinderById } from '../../data/binders';
 import { CardView } from '../card/CardView';
 import { audio } from '../../services/audioService';
-import { Search, Filter, Sparkles, Gem, Layers, ChevronRight, X, ArrowUpRight } from 'lucide-react';
+import { 
+  Search, Filter, Sparkles, Gem, Layers, ChevronRight, 
+  X, ArrowUpRight, Crown, Check, UserCheck, Lock 
+} from 'lucide-react';
 
 interface CollectionViewProps {
   collection: Record<string, number>;
   essence: number;
+  activeBinderId: string;
+  unlockedBinderIds: string[];
+  discoveredCardIds: string[];
+  onSetActiveBinder: (binderId: string) => void;
   onCraftCard: (cardId: string) => void;
   onDisenchantCard: (cardId: string) => void;
 }
@@ -16,6 +24,10 @@ interface CollectionViewProps {
 export const CollectionView: React.FC<CollectionViewProps> = ({
   collection,
   essence,
+  activeBinderId,
+  unlockedBinderIds,
+  discoveredCardIds,
+  onSetActiveBinder,
   onCraftCard,
   onDisenchantCard
 }) => {
@@ -23,11 +35,23 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
   const [selectedFaction, setSelectedFaction] = useState<string>('All');
   const [selectedRarity, setSelectedRarity] = useState<string>('All');
   const [selectedType, setSelectedType] = useState<string>('All');
+  const [selectedOwnership, setSelectedOwnership] = useState<'All' | 'Owned' | 'Undiscovered'>('All');
   const [selectedCost, setSelectedCost] = useState<number | null>(null);
   const [inspectedCard, setInspectedCard] = useState<Card | null>(null);
+  const [showBinderSelector, setShowBinderSelector] = useState(false);
+
+  const activeBinder = getBinderById(activeBinderId) || BINDERS[0];
 
   // Filter cards
   const filteredCards = ALL_CARDS.filter((card) => {
+    const count = collection[card.id] || 0;
+    const isDiscovered = discoveredCardIds.includes(card.id);
+    const isOwned = count > 0;
+
+    // Ownership filter
+    if (selectedOwnership === 'Owned' && !isOwned) return false;
+    if (selectedOwnership === 'Undiscovered' && (isOwned || isDiscovered)) return false;
+
     // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -76,27 +100,44 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
     }
   };
 
-  const handleCardClick = (card: Card) => {
+  const handleCardClick = (card: Card, isUndiscovered: boolean) => {
     audio.playClick();
-    setInspectedCard(card);
+    if (!isUndiscovered) {
+      setInspectedCard(card);
+    }
   };
 
   return (
     <div className="w-full h-full flex flex-col p-6 overflow-hidden">
-      {/* HEADER & FILTERS */}
+      {/* HEADER: Active Binder Banner & Currencies */}
       <div className="flex flex-col gap-4 mb-4">
-        {/* Title & Essence */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-cinzel font-bold text-slate-100 flex items-center gap-2">
-              <Layers className="w-6 h-6 text-indigo-400" />
-              Card Collection
-            </h1>
-            <p className="text-xs text-slate-400">
-              Browse, craft, and disenchant the cards of Veilbound ({ALL_CARDS.length} unique cards).
-            </p>
+        {/* Top bar */}
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          {/* Active Binder Display */}
+          <div className="flex items-center gap-3 bg-slate-900/80 p-2.5 px-4 rounded-2xl border border-amber-500/40 shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 p-0.5 shadow-md">
+              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-bold text-amber-300">
+                {activeBinder.name[0]}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-mono font-bold text-amber-400 tracking-wider">
+                Active Binder
+              </div>
+              <div className="text-sm font-cinzel font-black text-slate-100 flex items-center gap-1.5">
+                {activeBinder.name}
+                <span className="text-[10px] text-slate-400 font-sans font-normal">({activeBinder.title})</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowBinderSelector(true)}
+              className="ml-3 px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition-all shadow"
+            >
+              Change Binder
+            </button>
           </div>
 
+          {/* Essence counter */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel-glow border border-purple-500/40">
             <Gem className="w-4 h-4 text-purple-400" />
             <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold">Essence:</span>
@@ -104,18 +145,35 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
           </div>
         </div>
 
-        {/* Search Bar & Mana Cost filter pips */}
+        {/* Search Bar & Filters */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-white/5">
           {/* Search Input */}
-          <div className="relative w-72">
+          <div className="relative w-64">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by name, keyword, or text..."
+              placeholder="Search cards..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-1.5 rounded-lg bg-slate-950 border border-white/10 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
+          </div>
+
+          {/* Ownership Filter */}
+          <div className="flex items-center gap-1">
+            {(['All', 'Owned', 'Undiscovered'] as const).map((own) => (
+              <button
+                key={own}
+                onClick={() => setSelectedOwnership(own)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedOwnership === own
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                    : 'bg-slate-950/80 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {own}
+              </button>
+            ))}
           </div>
 
           {/* Mana Filter Gems */}
@@ -142,7 +200,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
               <button
                 key={fac}
                 onClick={() => setSelectedFaction(fac)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all ${
                   selectedFaction === fac
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'bg-slate-950/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -159,17 +217,103 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
       <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-6">
         {filteredCards.map((card) => {
           const count = collection[card.id] || 0;
+          const isDiscovered = discoveredCardIds.includes(card.id);
+          const isOwned = count > 0;
+          const isUndiscovered = !isOwned && !isDiscovered;
+          const isDiscoveredOnly = !isOwned && isDiscovered;
+
           return (
-            <div key={card.id} className="flex justify-center">
+            <div key={card.id} className="flex justify-center relative">
               <CardView
                 card={card}
                 showCount={count}
-                onClick={() => handleCardClick(card)}
+                isUndiscovered={isUndiscovered}
+                isDiscoveredOnly={isDiscoveredOnly}
+                onClick={() => handleCardClick(card, isUndiscovered)}
               />
+              {isDiscoveredOnly && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-purple-950/90 border border-purple-500 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow">
+                  Unowned
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* BINDER SELECTOR MODAL */}
+      {showBinderSelector && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="w-[680px] bg-slate-900 border border-amber-500/50 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl relative">
+            <button
+              onClick={() => setShowBinderSelector(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+              <Crown className="w-6 h-6 text-amber-400" />
+              <div>
+                <h2 className="text-xl font-cinzel font-bold text-slate-100">Select Active Binder</h2>
+                <p className="text-xs text-slate-400">Choose the champion to pilot your decks in 1V1 duels.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-2">
+              {BINDERS.map((binder) => {
+                const isUnlocked = unlockedBinderIds.includes(binder.id);
+                const isActive = activeBinderId === binder.id;
+
+                return (
+                  <div
+                    key={binder.id}
+                    onClick={() => {
+                      if (isUnlocked) {
+                        audio.playClick();
+                        onSetActiveBinder(binder.id);
+                        setShowBinderSelector(false);
+                      }
+                    }}
+                    className={`
+                      p-3 rounded-2xl border flex flex-col items-center text-center gap-2 transition-all relative
+                      ${
+                        isActive
+                          ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/50'
+                          : isUnlocked
+                          ? 'border-slate-700 bg-slate-950/60 hover:border-slate-500 cursor-pointer'
+                          : 'border-slate-800 bg-slate-950/30 opacity-50 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-2xl font-bold">
+                      {binder.name[0]}
+                    </div>
+                    <div>
+                      <div className="text-xs font-cinzel font-bold text-slate-100">{binder.name}</div>
+                      <div className="text-[10px] text-slate-400">{binder.title}</div>
+                    </div>
+
+                    {isActive && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Active
+                      </span>
+                    )}
+                    {!isActive && isUnlocked && (
+                      <span className="text-[10px] text-slate-400 hover:text-amber-300">Click to Select</span>
+                    )}
+                    {!isUnlocked && (
+                      <span className="text-[10px] text-red-400 flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Locked
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* INSPECTED CARD MODAL (Crafting / Disenchanting) */}
       {inspectedCard && (

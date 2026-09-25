@@ -14,6 +14,12 @@ export interface UserProfile {
   essence: number;
   wins: number;
   losses: number;
+  activeBinderId: string;
+  activeDeckId: string;
+  unlockedBinderIds: string[];
+  unlockedBattlefieldIds: string[];
+  unlockedCardBackIds: string[];
+  discoveredCardIds: string[];
   cardBackTheme: string;
   battlefieldTheme: string;
   favoriteFaction: string;
@@ -35,18 +41,28 @@ export interface StorageData {
   };
 }
 
-const STORAGE_KEY = 'VEILBOUND_SAVE_DATA_V1';
+const STORAGE_KEY = 'VEILBOUND_SAVE_DATA_V2';
 
 export function getDefaultStorage(): StorageData {
-  // Give starter cards: 2 copies of all Common & Rare cards in ALL_CARDS, 1 copy of all Epic & Legendary
+  // Curated starter collection: Only Starter Deck cards for Lyra Voss are owned (2x copies each)
   const initialCollection: Record<string, number> = {};
+  const discoveredCards: string[] = [];
+
+  const starterDeck = STARTER_DECKS.find(d => d.id === 'deck-lyra-starter') || STARTER_DECKS[0];
+  starterDeck.cardIds.forEach(cardId => {
+    initialCollection[cardId] = (initialCollection[cardId] || 0) + 1;
+    if (!discoveredCards.includes(cardId)) {
+      discoveredCards.push(cardId);
+    }
+  });
+
+  // Also mark common neutral cards as discovered (preview available)
   for (const card of ALL_CARDS) {
-    if (card.rarity === 'Common' || card.rarity === 'Rare') {
-      initialCollection[card.id] = 2;
-    } else if (card.rarity === 'Epic' || card.rarity === 'Legendary') {
-      initialCollection[card.id] = 1;
-    } else {
-      initialCollection[card.id] = 0; // Mythic unlocked through packs or crafting
+    if (!initialCollection[card.id]) {
+      initialCollection[card.id] = 0;
+      if (card.rarity === 'Common' && card.faction === 'Neutral') {
+        discoveredCards.push(card.id);
+      }
     }
   }
 
@@ -56,18 +72,24 @@ export function getDefaultStorage(): StorageData {
       title: 'Seeker of the Veil',
       level: 1,
       xp: 0,
-      xpToNextLevel: 500,
-      gold: 500, // Enough to immediately buy multiple packs!
-      essence: 320, // Enough to immediately craft an Epic card!
+      xpToNextLevel: 300,
+      gold: 250,
+      essence: 100,
       wins: 0,
       losses: 0,
+      activeBinderId: 'lyra-voss',
+      activeDeckId: starterDeck.id,
+      unlockedBinderIds: ['lyra-voss'],
+      unlockedBattlefieldIds: ['shattered-city', 'rootsea'],
+      unlockedCardBackIds: ['cosmic'],
+      discoveredCardIds: Array.from(new Set(discoveredCards)),
       cardBackTheme: 'cosmic',
       battlefieldTheme: 'shattered-city',
       favoriteFaction: 'Aetherbound',
       completedExpeditions: 0
     },
     collection: initialCollection,
-    decks: [...STARTER_DECKS],
+    decks: [starterDeck],
     customCards: [],
     achievements: [...ACHIEVEMENTS],
     quests: [...DAILY_QUESTS],
@@ -90,7 +112,23 @@ export function loadGameData(): StorageData {
       return def;
     }
     const parsed = JSON.parse(raw);
-    return { ...getDefaultStorage(), ...parsed };
+    const defaults = getDefaultStorage();
+    return {
+      ...defaults,
+      ...parsed,
+      profile: {
+        ...defaults.profile,
+        ...(parsed.profile || {})
+      },
+      collection: {
+        ...defaults.collection,
+        ...(parsed.collection || {})
+      },
+      settings: {
+        ...defaults.settings,
+        ...(parsed.settings || {})
+      }
+    };
   } catch (e) {
     console.error('Failed to load Veilbound save data, using defaults', e);
     return getDefaultStorage();
@@ -104,4 +142,14 @@ export function saveGameData(data: StorageData) {
   } catch (e) {
     console.error('Failed to save Veilbound game data', e);
   }
+}
+
+export function getCardOwnershipStatus(
+  cardId: string,
+  collection: Record<string, number>,
+  discoveredCardIds: string[]
+): 'OWNED' | 'DISCOVERED' | 'UNDISCOVERED' {
+  if ((collection[cardId] || 0) > 0) return 'OWNED';
+  if (discoveredCardIds.includes(cardId)) return 'DISCOVERED';
+  return 'UNDISCOVERED';
 }

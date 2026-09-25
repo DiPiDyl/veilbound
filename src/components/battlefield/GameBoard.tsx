@@ -9,6 +9,7 @@ import { DestinyTrackView } from './DestinyTrackView';
 import { BattlefieldParticles } from './BattlefieldParticles';
 import { LivingAvatar } from './LivingAvatar';
 import { TurnTimer } from './TurnTimer';
+import { BattleIntroSequence } from './BattleIntroSequence';
 import { 
   playCardFromHand, 
   attackWithMinion, 
@@ -37,6 +38,7 @@ interface GameBoardProps {
 
 export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, onExit }) => {
   const [matchState, setMatchState] = useState<MatchState>(initialState);
+  const [isIntroActive, setIsIntroActive] = useState<boolean>(!initialState.isSandboxMode);
   const [selectedMinionId, setSelectedMinionId] = useState<string | null>(null);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [showCombatLogs, setShowCombatLogs] = useState(false);
@@ -191,8 +193,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
 
   // Turn Timeout auto-handler
   const handleTimeout = () => {
-    if (matchState.activePlayer === 'player' && matchState.phase === 'playing') {
+    if (matchState.phase !== 'playing') return;
+    if (matchState.activePlayer === 'player') {
       handleEndTurn();
+    } else if (matchState.activePlayer === 'opponent') {
+      setIsAIProcessing(false);
+      setAiActionMessage(null);
+      setMatchState((current) => endCurrentTurn(current));
     }
   };
 
@@ -208,6 +215,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
 
   return (
     <div className={`relative w-full h-screen bg-gradient-to-b ${bfTheme.bgGradient} flex flex-col justify-between overflow-hidden select-none`}>
+      {/* Cinematic Battle Intro Sequence */}
+      {isIntroActive && (
+        <BattleIntroSequence
+          playerBinder={matchState.player.binder}
+          opponentBinder={matchState.opponent.binder}
+          battlefieldTheme={matchState.battlefieldTheme}
+          onIntroComplete={() => setIsIntroActive(false)}
+        />
+      )}
+
       {/* Dynamic Background Particle System */}
       <BattlefieldParticles veilState={matchState.veilState} />
 

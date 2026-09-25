@@ -191,6 +191,34 @@ export const CardLabView: React.FC<CardLabViewProps> = ({
     );
   }
 
+  const handleRemix = () => {
+    audio.playCardFlip();
+    const randWhen = WHEN_TRIGGERS[Math.floor(Math.random() * WHEN_TRIGGERS.length)];
+    const randDo = DO_ACTIONS[Math.floor(Math.random() * DO_ACTIONS.length)];
+    const randTarget = TARGETS[Math.floor(Math.random() * TARGETS.length)];
+    const randVal = VALUES[Math.floor(Math.random() * VALUES.length)];
+    setWhenTrigger(randWhen);
+    setDoAction(randDo);
+    setTargetType(randTarget);
+    setEffectValue(randVal);
+    setEditingDraft(prev => ({
+      ...prev,
+      description: `${randWhen}: ${randDo} ${randVal} to ${randTarget}.`,
+      keywords: randWhen === 'Battlecry' ? ['Battlecry'] : randWhen === 'Deathrattle' ? ['Deathrattle'] : prev.keywords
+    }));
+  };
+
+  const handleDuplicate = () => {
+    audio.playClick();
+    const copyDraft: CustomCardDraft = {
+      ...editingDraft,
+      id: `custom-${Date.now()}`,
+      name: `${editingDraft.name} (Copy)`
+    };
+    onSaveCustomCard(copyDraft);
+    setEditingDraft(copyDraft);
+  };
+
   return (
     <div className="w-full h-full min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col p-4 md:p-8 select-none overflow-y-auto">
       {/* Header bar */}
@@ -211,13 +239,30 @@ export const CardLabView: React.FC<CardLabViewProps> = ({
         </div>
 
         {/* Global Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleSurpriseMe}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all hover:scale-105 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-xs shadow transition-all hover:scale-105 flex items-center gap-1.5"
+            title="Generate completely random card"
           >
             <Shuffle className="w-4 h-4" />
-            <span>Surprise Me! (Randomize)</span>
+            <span>Randomize</span>
+          </button>
+          <button
+            onClick={handleRemix}
+            className="px-3.5 py-2 rounded-xl bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 font-bold text-xs shadow transition-all hover:scale-105 flex items-center gap-1.5"
+            title="Randomize effects while preserving stats"
+          >
+            <Wand2 className="w-4 h-4" />
+            <span>Remix</span>
+          </button>
+          <button
+            onClick={handleDuplicate}
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold text-xs shadow transition-all hover:scale-105 flex items-center gap-1.5"
+            title="Duplicate draft"
+          >
+            <Copy className="w-4 h-4" />
+            <span>Duplicate</span>
           </button>
           <button
             onClick={handleLaunchSandbox}

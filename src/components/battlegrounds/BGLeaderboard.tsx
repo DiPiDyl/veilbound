@@ -24,7 +24,7 @@ export const BGLeaderboard: React.FC<BGLeaderboardProps> = ({
           </span>
         </div>
         <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-600/40">
-          {aliveCount} / 10 Alive
+          {aliveCount} / 8 Alive
         </span>
       </div>
 

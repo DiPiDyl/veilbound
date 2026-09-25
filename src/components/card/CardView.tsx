@@ -12,6 +12,8 @@ interface CardViewProps {
   size?: 'sm' | 'md' | 'lg';
   showCount?: number;
   isSelected?: boolean;
+  isUndiscovered?: boolean;
+  isDiscoveredOnly?: boolean;
 }
 
 export const CardView: React.FC<CardViewProps> = ({
@@ -20,7 +22,9 @@ export const CardView: React.FC<CardViewProps> = ({
   isPlayable = false,
   size = 'md',
   showCount,
-  isSelected = false
+  isSelected = false,
+  isUndiscovered = false,
+  isDiscoveredOnly = false
 }) => {
   const getRarityBorder = (rarity: CardRarity) => {
     switch (rarity) {
@@ -92,6 +96,32 @@ export const CardView: React.FC<CardViewProps> = ({
     audio.playCardHover();
   };
 
+  if (isUndiscovered) {
+    return (
+      <div
+        onClick={onClick}
+        onMouseEnter={handleMouseEnter}
+        className={`
+          ${dimensions}
+          rounded-2xl border-2 border-slate-700/60 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950
+          relative overflow-hidden flex flex-col items-center justify-center select-none cursor-pointer
+          shadow-xl transition-all duration-200 hover:border-purple-500/50 hover:scale-[1.02]
+        `}
+      >
+        <div className="absolute inset-0 bg-radial from-purple-900/15 to-transparent pointer-events-none" />
+        <div className="w-12 h-12 rounded-full border border-purple-500/40 bg-purple-950/40 flex items-center justify-center text-purple-400 font-cinzel text-xl font-bold mb-2 shadow-inner">
+          ?
+        </div>
+        <span className="font-cinzel text-xs font-bold text-slate-300 uppercase tracking-widest text-center px-2">
+          Undiscovered
+        </span>
+        <span className="text-[10px] text-slate-500 font-mono mt-1">
+          Find in packs
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={onClick}
@@ -104,6 +134,7 @@ export const CardView: React.FC<CardViewProps> = ({
         ${getRarityBorder(card.rarity)}
         ${isPlayable ? 'ring-4 ring-emerald-400 shadow-[0_0_22px_rgba(52,211,153,0.9)] scale-[1.02]' : ''}
         ${isSelected ? 'ring-4 ring-amber-400 scale-105 z-20' : ''}
+        ${isDiscoveredOnly ? 'opacity-70 grayscale-[25%]' : ''}
         shadow-2xl
       `}
     >

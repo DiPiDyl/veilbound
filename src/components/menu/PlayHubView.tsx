@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavTab } from './TopNav';
 import { audio } from '../../services/audioService';
-import { PlayerProgressionState, ProgressionService } from '../../services/progressionService';
+import { PlayerProgressionState } from '../../services/progressionService';
 import { 
   Swords, Compass, Wrench, Shield, Sparkles, 
-  ChevronRight, Zap, Trophy, BookOpen, Puzzle, Lock, Star 
+  ChevronRight, Zap, Trophy, BookOpen, Puzzle, Star 
 } from 'lucide-react';
 
 interface PlayHubViewProps {
@@ -20,10 +20,6 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
   onOpenCodex,
   progression
 }) => {
-  const isBGUnlocked = ProgressionService.isFeatureUnlocked(progression, 'BATTLEGROUNDS');
-  const isPuzzlesUnlocked = ProgressionService.isFeatureUnlocked(progression, 'PUZZLES');
-  const isExpeditionUnlocked = ProgressionService.isFeatureUnlocked(progression, 'EXPEDITION');
-
   const xpProgressPercent = Math.min(100, Math.round((progression.currentXp / progression.xpToNextLevel) * 100));
 
   return (
@@ -36,7 +32,7 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
 
         <div className="relative z-10 max-w-2xl">
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">
-            <Sparkles className="w-4 h-4" /> VEILBOUND 2 • The Edge of Reality
+            <Sparkles className="w-4 h-4" /> VEILBOUND 2.1 • The Edge of Reality
           </div>
           <h1 className="text-3xl lg:text-4xl font-cinzel font-black text-slate-100 mb-2 drop-shadow">
             Command Reality. Slay Champions.
@@ -70,49 +66,29 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
             className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-cinzel font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95"
           >
             <Swords className="w-4 h-4" />
-            <span>Launch 1v1 Duel</span>
+            <span>Launch 1v1 Quick Duel</span>
           </button>
 
           <button
             onClick={() => {
-              if (isBGUnlocked) {
-                audio.playClick();
-                onNavigateTab('BATTLEGROUNDS');
-              } else {
-                audio.playClick();
-                alert('🔒 Battlegrounds unlocks at Player Level 6!');
-              }
+              audio.playClick();
+              onNavigateTab('BATTLEGROUNDS');
             }}
-            className={`px-6 py-3 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all ${
-              isBGUnlocked
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:scale-105'
-                : 'bg-slate-900 border border-slate-800 text-slate-500'
-            }`}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-cinzel font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all hover:scale-105 active:scale-95"
           >
             <Trophy className="w-4 h-4" />
-            <span>Battlegrounds {isBGUnlocked ? '' : '(Lv. 6)'}</span>
-            {!isBGUnlocked && <Lock className="w-3 h-3 text-amber-400" />}
+            <span>Battlegrounds (8 Players)</span>
           </button>
 
           <button
             onClick={() => {
-              if (isPuzzlesUnlocked) {
-                audio.playClick();
-                onNavigateTab('PUZZLES');
-              } else {
-                audio.playClick();
-                alert('🔒 Puzzles Mode unlocks at Player Level 5!');
-              }
+              audio.playClick();
+              onNavigateTab('PUZZLES');
             }}
-            className={`px-6 py-3 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all ${
-              isPuzzlesUnlocked
-                ? 'bg-purple-900/80 border border-purple-500/60 text-purple-200 hover:bg-purple-800 hover:scale-105 shadow-md'
-                : 'bg-slate-900 border border-slate-800 text-slate-500'
-            }`}
+            className="px-6 py-3 rounded-xl bg-purple-900/80 border border-purple-500/60 text-purple-200 font-cinzel font-bold text-xs uppercase tracking-wider flex items-center gap-2 hover:bg-purple-800 transition-all hover:scale-105 shadow-md"
           >
             <Puzzle className="w-4 h-4 text-purple-400" />
-            <span>Puzzles {isPuzzlesUnlocked ? '' : '(Lv. 5)'}</span>
-            {!isPuzzlesUnlocked && <Lock className="w-3 h-3 text-amber-400" />}
+            <span>Tactical Puzzles</span>
           </button>
 
           {onOpenCodex && (
@@ -130,7 +106,7 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
         </div>
       </div>
 
-      {/* Featured 4 Game Modes Grid */}
+      {/* Featured 4 Game Modes Grid - All Unlocked Immediately */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* 1. 1v1 Classic Duel */}
         <div
@@ -141,7 +117,7 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
           className="rounded-2xl bg-slate-900/70 border border-emerald-500/40 p-5 flex flex-col justify-between cursor-pointer hover:border-emerald-400 hover:scale-[1.02] transition-all duration-300 shadow-xl group"
         >
           <div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-3 group-hover:rotate-6 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-3 group-hover:rotate-6 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.3)]">
               <Swords className="w-6 h-6" />
             </div>
             <div className="flex items-center gap-1.5 mb-1">
@@ -149,7 +125,7 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
               <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded">Active</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Traditional card battle against intelligent AI Binders with step-by-step decision loops, lethal detection, and real tactics.
+              Fast 8–15 minute competitive card battle against autonomous AI Binders with step-by-step decision loops, lethal detection, and real tactics.
             </p>
           </div>
           <div className="flex items-center text-xs font-bold text-emerald-400 group-hover:translate-x-1 transition-transform">
@@ -157,22 +133,13 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
           </div>
         </div>
 
-        {/* 2. Veilbound Battlegrounds (10-Player Auto-Battler) */}
+        {/* 2. Veilbound Battlegrounds (8-Player Auto-Battler) */}
         <div
           onClick={() => {
-            if (isBGUnlocked) {
-              audio.playClick();
-              onNavigateTab('BATTLEGROUNDS');
-            } else {
-              audio.playClick();
-              alert('🔒 Battlegrounds unlocks at Player Level 6!');
-            }
+            audio.playClick();
+            onNavigateTab('BATTLEGROUNDS');
           }}
-          className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer ${
-            isBGUnlocked
-              ? 'bg-gradient-to-br from-amber-950/20 via-slate-900/60 to-purple-950/20 border-amber-500/40 hover:border-amber-400 hover:scale-[1.02]'
-              : 'bg-slate-950/40 border-slate-800 opacity-60'
-          }`}
+          className="rounded-2xl bg-gradient-to-br from-amber-950/20 via-slate-900/60 to-purple-950/20 border border-amber-500/40 p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer hover:border-amber-400 hover:scale-[1.02]"
         >
           <div>
             <div className="w-12 h-12 rounded-xl bg-amber-950/80 border border-amber-500/60 flex items-center justify-center text-amber-400 mb-3 group-hover:rotate-6 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.4)]">
@@ -181,87 +148,69 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
             <div className="flex items-center gap-1.5 mb-1">
               <h3 className="font-cinzel font-bold text-base text-slate-100">Battlegrounds</h3>
               <span className="text-[9px] font-bold text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded">
-                {isBGUnlocked ? '10 Players' : 'Unlocks Lv. 6'}
+                8 Players
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Original auto-battler mode! Recruit from The Rift Market, deploy units, activate 6 faction synergies, and survive to the Final Duel.
+              Original 8-player auto-battler! Recruit from The Rift Market, deploy units, activate 6 faction synergies, and survive to the cinematic Final Duel.
             </p>
           </div>
           <div className="flex items-center text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-            <span>{isBGUnlocked ? 'Enter Market' : 'Locked (Level 6)'}</span> <ChevronRight className="w-4 h-4" />
+            <span>Enter Market</span> <ChevronRight className="w-4 h-4" />
           </div>
         </div>
 
         {/* 3. Tactical Puzzles */}
         <div
           onClick={() => {
-            if (isPuzzlesUnlocked) {
-              audio.playClick();
-              onNavigateTab('PUZZLES');
-            } else {
-              audio.playClick();
-              alert('🔒 Puzzles Mode unlocks at Player Level 5!');
-            }
+            audio.playClick();
+            onNavigateTab('PUZZLES');
           }}
-          className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer ${
-            isPuzzlesUnlocked
-              ? 'bg-purple-950/20 border-purple-500/40 hover:border-purple-400 hover:scale-[1.02]'
-              : 'bg-slate-950/40 border-slate-800 opacity-60'
-          }`}
+          className="rounded-2xl bg-purple-950/20 border border-purple-500/40 p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer hover:border-purple-400 hover:scale-[1.02]"
         >
           <div>
-            <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-purple-500/60 flex items-center justify-center text-purple-400 mb-3 group-hover:rotate-6 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-purple-500/60 flex items-center justify-center text-purple-400 mb-3 group-hover:rotate-6 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.3)]">
               <Puzzle className="w-6 h-6" />
             </div>
             <div className="flex items-center gap-1.5 mb-1">
               <h3 className="font-cinzel font-bold text-base text-slate-100">Tactical Puzzles</h3>
               <span className="text-[9px] font-bold text-purple-300 bg-purple-950 px-1.5 py-0.5 rounded">
-                {isPuzzlesUnlocked ? '6 Chapters' : 'Unlocks Lv. 5'}
+                6 Chapters
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Handcrafted tactical scenarios! Master exact lethal sequences, Veil state shifts, ritual accelerations, and earn 3-star ratings.
+              Handcrafted 1–5 minute tactical scenarios! Master exact lethal sequences, Veil state shifts, ritual accelerations, and earn 3-star ratings.
             </p>
           </div>
           <div className="flex items-center text-xs font-bold text-purple-400 group-hover:translate-x-1 transition-transform">
-            <span>{isPuzzlesUnlocked ? 'Solve Puzzles' : 'Locked (Level 5)'}</span> <ChevronRight className="w-4 h-4" />
+            <span>Solve Puzzles</span> <ChevronRight className="w-4 h-4" />
           </div>
         </div>
 
         {/* 4. Roguelite Expedition */}
         <div
           onClick={() => {
-            if (isExpeditionUnlocked) {
-              audio.playClick();
-              onNavigateTab('EXPEDITION');
-            } else {
-              audio.playClick();
-              alert('🔒 Expedition unlocks at Player Level 7!');
-            }
+            audio.playClick();
+            onNavigateTab('EXPEDITION');
           }}
-          className={`rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer ${
-            isExpeditionUnlocked
-              ? 'bg-sky-950/20 border-sky-500/40 hover:border-sky-400 hover:scale-[1.02]'
-              : 'bg-slate-950/40 border-slate-800 opacity-60'
-          }`}
+          className="rounded-2xl bg-sky-950/20 border border-sky-500/40 p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group cursor-pointer hover:border-sky-400 hover:scale-[1.02]"
         >
           <div>
-            <div className="w-12 h-12 rounded-xl bg-sky-950/80 border border-sky-500/40 flex items-center justify-center text-sky-400 mb-3 group-hover:rotate-6 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-sky-950/80 border border-sky-500/40 flex items-center justify-center text-sky-400 mb-3 group-hover:rotate-6 transition-transform shadow-[0_0_15px_rgba(14,165,233,0.3)]">
               <Compass className="w-6 h-6" />
             </div>
             <div className="flex items-center gap-1.5 mb-1">
               <h3 className="font-cinzel font-bold text-base text-slate-100">The Expedition</h3>
               <span className="text-[9px] font-bold text-sky-300 bg-sky-950 px-1.5 py-0.5 rounded">
-                {isExpeditionUnlocked ? 'Roguelite' : 'Unlocks Lv. 7'}
+                Roguelite
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Traverse branching procedural planar maps, claim run-defining treasures, face moral narrative crossroads, and slay ancient archons.
+              Compact 15–25 minute planar map runs. Draft run-defining artifacts, face moral narrative crossroads, and slay ancient archons.
             </p>
           </div>
           <div className="flex items-center text-xs font-bold text-sky-400 group-hover:translate-x-1 transition-transform">
-            <span>{isExpeditionUnlocked ? 'Explore Map' : 'Locked (Level 7)'}</span> <ChevronRight className="w-4 h-4" />
+            <span>Explore Map</span> <ChevronRight className="w-4 h-4" />
           </div>
         </div>
       </div>

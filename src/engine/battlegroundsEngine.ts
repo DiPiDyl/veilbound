@@ -9,20 +9,25 @@ import {
 import { BINDERS } from '../data/binders';
 import { BG_UNIT_POOL, createBGUnitInstance } from '../data/battlegroundsUnits';
 
-export const AI_NAMES = [
-  'Valen the Ashen',
-  'Sylvia Thornheart',
-  'Krom Ironbreaker',
-  'Orion Star-Seeker',
-  'Vesper Shadowveil',
-  'Chronos the Maker',
-  'Zara Riftwalker',
-  'Ignis Sunweaver',
-  'Malakar Voidmaw'
+export interface BGAIPersonalityDef {
+  name: string;
+  binderId: string;
+  personality: string;
+  favoredFaction: BGFaction;
+}
+
+export const BG_AI_PERSONALITIES: BGAIPersonalityDef[] = [
+  { name: 'The Collector', binderId: 'lyra-voss', personality: 'Rift Collector', favoredFaction: 'Riftborn' },
+  { name: 'The Garden Mind', binderId: 'mira-thorn', personality: 'Organic Swarm', favoredFaction: 'Thornbloom' },
+  { name: 'The Clockmaker', binderId: 'orin-vale', personality: 'Chrono Engineer', favoredFaction: 'Clockwork' },
+  { name: 'The Star Eater', binderId: 'seraphine-starforged', personality: 'Celestial Sovereign', favoredFaction: 'Starborn' },
+  { name: 'The Hollow King', binderId: 'nox-revenant', personality: 'Revenant Lord', favoredFaction: 'Wraithkin' },
+  { name: 'The Mirror', binderId: 'lyra-voss', personality: 'Adaptive Mimic', favoredFaction: 'Neutral' },
+  { name: 'Ashen Warlord', binderId: 'kael-drake', personality: 'Molten Berserker', favoredFaction: 'Ashforged' }
 ];
 
 /**
- * Creates 10 participants (1 Player + 9 AIs).
+ * Creates 8 participants (1 Player + 7 AIs).
  */
 export function initializeBGParticipants(playerBinderId?: string): BGParticipant[] {
   const chosenBinder = BINDERS.find(b => b.id === playerBinderId) || BINDERS[0];
@@ -48,13 +53,13 @@ export function initializeBGParticipants(playerBinderId?: string): BGParticipant
     }
   ];
 
-  // 9 AI Opponents
-  AI_NAMES.forEach((name, idx) => {
-    const binder = BINDERS[(idx + 1) % BINDERS.length];
+  // 7 AI Opponents with distinct identities
+  BG_AI_PERSONALITIES.forEach((ai, idx) => {
+    const binder = BINDERS.find(b => b.id === ai.binderId) || BINDERS[idx % BINDERS.length];
     participants.push({
       id: `bg-ai-${idx + 1}`,
       isHuman: false,
-      name,
+      name: ai.name,
       binder,
       health: 35,
       maxHealth: 35,
@@ -66,7 +71,7 @@ export function initializeBGParticipants(playerBinderId?: string): BGParticipant
       bench: [],
       placement: idx + 2,
       isAlive: true,
-      personality: idx % 2 === 0 ? 'Aggressive Swarm' : 'Defensive Scaling',
+      personality: ai.personality,
       winStreak: 0
     });
   });

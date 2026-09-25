@@ -37,6 +37,23 @@ export const RiftMarketView: React.FC<RiftMarketViewProps> = ({
   onUpgradeTier,
   onReadyForCombat
 }) => {
+  const [prepTimer, setPrepTimer] = React.useState<number>(45);
+
+  React.useEffect(() => {
+    setPrepTimer(45);
+    const interval = setInterval(() => {
+      setPrepTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onReadyForCombat();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [roundNumber]);
+
   const canAffordUpgrade = player.shards >= player.tierUpgradeCost && player.tier < 6;
   const canAffordRefresh = player.shards >= 1;
 
@@ -331,18 +348,25 @@ export const RiftMarketView: React.FC<RiftMarketViewProps> = ({
           )}
         </div>
 
-        {/* Ready to Fight button */}
-        <button
-          onClick={() => {
-            audio.playTurnStart(true);
-            onReadyForCombat();
-          }}
-          className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 flex-shrink-0"
-        >
-          <span>⚔️</span>
-          <span>ENTER COMBAT</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        {/* Preparation Timer & Ready to Fight button */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-amber-500/40 text-xs font-mono font-bold text-amber-300 shadow">
+            <span>⏱️</span>
+            <span>{prepTimer}s</span>
+          </div>
+
+          <button
+            onClick={() => {
+              audio.playTurnStart(true);
+              onReadyForCombat();
+            }}
+            className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+          >
+            <span>⚔️</span>
+            <span>ENTER COMBAT</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

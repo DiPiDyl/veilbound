@@ -19,14 +19,16 @@ export const TurnTimer: React.FC<TurnTimerProps> = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(durationSeconds);
   const prevTurnRef = useRef<number>(turnNumber);
+  const prevActiveRef = useRef<'player' | 'opponent'>(activePlayer);
 
-  // Reset timer on turn change
+  // Reset timer on turn change or active player switch
   useEffect(() => {
     setTimeLeft(durationSeconds);
     prevTurnRef.current = turnNumber;
+    prevActiveRef.current = activePlayer;
   }, [turnNumber, activePlayer, durationSeconds]);
 
-  // Countdown loop
+  // Real-time countdown loop
   useEffect(() => {
     if (isPaused) return;
 
@@ -40,10 +42,10 @@ export const TurnTimer: React.FC<TurnTimerProps> = ({
 
         const nextVal = prev - 1;
 
-        // Play audio cues
+        // Audio cues
         if (nextVal <= 5 && nextVal > 0) {
           audio.playTimerTick(true);
-        } else if (nextVal === 10 || nextVal === 15) {
+        } else if (nextVal === 10) {
           audio.playTimerTick(false);
         }
 
@@ -52,64 +54,70 @@ export const TurnTimer: React.FC<TurnTimerProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused, onTimeout]);
+  }, [isPaused, onTimeout, turnNumber, activePlayer]);
 
-  // Color and styling based on urgency
-  const getTimerStyles = () => {
-    if (timeLeft <= 5) {
-      return {
-        textColor: 'text-red-400 font-extrabold animate-bounce text-lg',
-        ringColor: '#ef4444',
-        glow: 'shadow-[0_0_20px_rgba(239,68,68,0.9)] animate-pulse'
-      };
-    }
-    if (timeLeft <= 15) {
-      return {
-        textColor: 'text-amber-400 font-bold animate-pulse text-base',
-        ringColor: '#f59e0b',
-        glow: 'shadow-[0_0_15px_rgba(245,158,11,0.6)]'
-      };
-    }
-    return {
-      textColor: 'text-emerald-400 font-bold text-sm',
-      ringColor: '#10b981',
-      glow: 'shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-    };
-  };
-
-  const styles = getTimerStyles();
+  const isPlayer = activePlayer === 'player';
   const radius = 22;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (timeLeft / durationSeconds) * circumference;
 
-  return (
-    <div className={`relative flex items-center justify-center select-none ${styles.glow} rounded-full`}>
-      <svg className="w-14 h-14 -rotate-90">
-        <circle
-          cx="28"
-          cy="28"
-          r={radius}
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="4"
-          fill="rgba(15,23,42,0.9)"
-        />
-        <circle
-          cx="28"
-          cy="28"
-          r={radius}
-          stroke={styles.ringColor}
-          strokeWidth="4"
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          className="transition-all duration-1000 ease-linear"
-        />
-      </svg>
+  // Urgency styling
+  const isUrgent = timeLeft <= 10;
+  const isCritical = timeLeft <= 5;
 
-      {/* Countdown digit */}
-      <div className={`absolute flex flex-col items-center justify-center ${styles.textColor}`}>
-        <span className="leading-none">{timeLeft}s</span>
+  let borderColor = isPlayer ? 'border-amber-500/50' : 'border-purple-500/50';
+  let badgeBg = isPlayer ? 'bg-amber-950/80 text-amber-300' : 'bg-purple-950/80 text-purple-300';
+  let ringColor = isPlayer ? '#f59e0b' : '#a855f7';
+
+  if (isCritical) {
+    borderColor = 'border-red-500 animate-pulse';
+    badgeBg = 'bg-red-950/90 text-red-200 animate-bounce';
+    ringColor = '#ef4444';
+  } else if (isUrgent) {
+    borderColor = 'border-amber-400';
+    badgeBg = 'bg-yellow-950/90 text-amber-200 animate-pulse';
+    ringColor = '#eab308';
+  }
+
+  const turnLabel = isPlayer ? `YOUR TURN — ${timeLeft}` : `ENEMY TURN — ${timeLeft}`;
+
+  return (
+    <div className="flex items-center gap-2.5 select-none">
+      {/* Prominent Banner Badge */}
+      <div className={`px-3 py-1 rounded-full border text-xs font-mono font-black tracking-wider uppercase shadow-lg flex items-center gap-1.5 transition-all duration-300 ${badgeBg} ${borderColor}`}>
+        {isCritical && <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-spin" />}
+        {!isCritical && <Clock className="w-3.5 h-3.5 opacity-80" />}
+        <span>{turnLabel}</span>
+      </div>
+
+      {/* Circular dial */}
+      <div className={`relative flex items-center justify-center rounded-full shadow-lg ${isCritical ? 'shadow-red-500/40' : ''}`}>
+        <svg className="w-11 h-11 -rotate-90">
+          <circle
+            cx="22"
+            cy="22"
+            r={radius}
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth="3.5"
+            fill="rgba(15,23,42,0.85)"
+          />
+          <circle
+            cx="22"
+            cy="22"
+            r={radius}
+            stroke={ringColor}
+            strokeWidth="3.5"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-linear"
+          />
+        </svg>
+
+        <span className={`absolute text-[11px] font-mono font-bold ${isCritical ? 'text-red-400 font-black' : isPlayer ? 'text-amber-300' : 'text-purple-300'}`}>
+          {timeLeft}
+        </span>
       </div>
     </div>
   );
