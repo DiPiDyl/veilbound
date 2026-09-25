@@ -7,7 +7,9 @@ import { DeckBuilderView } from './components/deckbuilder/DeckBuilderView';
 import { PackOpeningView } from './components/packs/PackOpeningView';
 import { CardLabView } from './components/cardlab/CardLabView';
 import { ExpeditionView } from './components/expedition/ExpeditionView';
-import { FreeForAllView } from './components/freeforall/FreeForAllView';
+import { VeilboundBattlegroundsView } from './components/battlegrounds/VeilboundBattlegroundsView';
+import { PuzzleModeView } from './components/puzzles/PuzzleModeView';
+import { UnlockNotificationModal } from './components/menu/UnlockNotificationModal';
 import { ProfileView } from './components/profile/ProfileView';
 import { GameBoard } from './components/battlefield/GameBoard';
 import { QuickBattleModal } from './components/menu/QuickBattleModal';
@@ -24,6 +26,8 @@ import { PackDefinition } from './data/packs';
 import { Card } from './types/card';
 import { FreeForAllOpponent } from './data/freeForAllEnemies';
 import { audio } from './services/audioService';
+import { ProgressionService, PlayerProgressionState } from './services/progressionService';
+import { LevelMilestone } from './types/progression';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<StorageData>(loadGameData);
@@ -33,6 +37,10 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
+
+  // Progression & Milestones
+  const [progression, setProgression] = useState<PlayerProgressionState>(() => ProgressionService.loadProgression());
+  const [pendingMilestone, setPendingMilestone] = useState<LevelMilestone | null>(null);
 
   // Free-For-All Gauntlet persistent stage
   const [freeForAllStage, setFreeForAllStage] = useState<number>(() => {
@@ -92,6 +100,25 @@ export const App: React.FC = () => {
 
     setActiveMatch(match);
     setIsQuickBattleOpen(false);
+  };
+
+  // Progression helper
+  const addProgressionXp = (amount: number) => {
+    const result = ProgressionService.addXp(progression, amount);
+    setProgression(result.nextState);
+    if (result.newMilestone) {
+      setPendingMilestone(result.newMilestone);
+      if (result.newMilestone.rewardGold > 0 || result.newMilestone.rewardEssence > 0) {
+        updateData((prev) => ({
+          ...prev,
+          profile: {
+            ...prev.profile,
+            gold: prev.profile.gold + result.newMilestone!.rewardGold,
+            essence: prev.profile.essence + result.newMilestone!.rewardEssence,
+          }
+        }));
+      }
+    }
   };
 
   // Launch Free-For-All Gauntlet match
@@ -169,11 +196,40 @@ export const App: React.FC = () => {
       };
     });
 
+    // Award XP to sequential Player Progression system
+    const xpGained = won ? 120 : 40;
+    addProgressionXp(xpGained);
+
     if (isFFA && won) {
       setFreeForAllStage((prev) => prev + 1);
     }
 
     setActiveMatch(null);
+  };
+
+  // Battlegrounds Finished
+  const handleBattlegroundsFinished = (_placement: number, rewards: { gold: number; xp: number }) => {
+    updateData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        gold: prev.profile.gold + rewards.gold,
+      }
+    }));
+    addProgressionXp(rewards.xp);
+  };
+
+  // Puzzle Reward Claimed
+  const handlePuzzleRewardClaimed = (rewards: { gold: number; essence: number }) => {
+    updateData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        gold: prev.profile.gold + rewards.gold,
+        essence: prev.profile.essence + rewards.essence,
+      }
+    }));
+    addProgressionXp(50);
   };
 
   // Crafting
@@ -296,12 +352,15 @@ export const App: React.FC = () => {
         completedExpeditions: prev.profile.completedExpeditions + (won ? 1 : 0)
       }
     }));
+    addProgressionXp(120);
   };
 
   // Reset Data
   const handleResetData = () => {
     localStorage.removeItem('VEILBOUND_SAVE_DATA_V1');
     localStorage.removeItem('VEILBOUND_FFA_STAGE');
+    localStorage.removeItem('VEILBOUND_PROGRESSION_V2');
+    localStorage.removeItem('VEILBOUND_SOLVED_PUZZLES_V2');
     window.location.reload();
   };
 
@@ -336,24 +395,31 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onOpenCodex={() => setIsCodexOpen(true)}
+        progression={progression}
       />
 
       {/* Main View Port */}
       <main className="flex-1 overflow-hidden relative">
         {currentTab === 'PLAY' && (
           <PlayHubView
-            onOpenQuickBattle={() => setIsQuickBattleOpen(false || true)}
+            onOpenQuickBattle={() => setIsQuickBattleOpen(true)}
             onNavigateTab={setCurrentTab}
             onOpenCodex={() => setIsCodexOpen(true)}
+            progression={progression}
           />
         )}
 
-        {currentTab === 'FREE FOR ALL' && (
-          <FreeForAllView
-            currentStage={freeForAllStage}
-            onStartMatch={handleStartFreeForAllFight}
+        {currentTab === 'BATTLEGROUNDS' && (
+          <VeilboundBattlegroundsView
             onBackToMenu={() => setCurrentTab('PLAY')}
-            onResetGauntlet={() => setFreeForAllStage(1)}
+            onMatchFinished={handleBattlegroundsFinished}
+          />
+        )}
+
+        {currentTab === 'PUZZLES' && (
+          <PuzzleModeView
+            onBackToMenu={() => setCurrentTab('PLAY')}
+            onRewardClaimed={handlePuzzleRewardClaimed}
           />
         )}
 
@@ -445,6 +511,12 @@ export const App: React.FC = () => {
       <CodexModal
         isOpen={isCodexOpen}
         onClose={() => setIsCodexOpen(false)}
+      />
+
+      {/* Level-Up Celebration Modal */}
+      <UnlockNotificationModal
+        milestone={pendingMilestone}
+        onDismiss={() => setPendingMilestone(null)}
       />
     </div>
   );

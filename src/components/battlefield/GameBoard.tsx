@@ -15,13 +15,18 @@ import {
   activateHeroPower, 
   endCurrentTurn 
 } from '../../engine/gameEngine';
-import { executeAITurn } from '../../engine/aiEngine';
+import { 
+  getNextAIAction, 
+  executeSingleAIAction 
+} from '../../engine/aiDecisionEngine';
+import { aiDebugManager } from '../../engine/aiDebugInspector';
+import { AIDebugModal } from './AIDebugModal';
 import { shiftVeilTo } from '../../engine/veilEngine';
 import { getBattlefieldById } from '../../data/battlefields';
 import { audio } from '../../services/audioService';
 import { 
   Shield, Sword, Heart, Sparkles, ChevronRight, RotateCcw, 
-  Clock, Scroll, Award, ArrowRight, Zap 
+  Clock, Scroll, Award, ArrowRight, Zap, Bug 
 } from 'lucide-react';
 
 interface GameBoardProps {
@@ -35,6 +40,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
   const [selectedMinionId, setSelectedMinionId] = useState<string | null>(null);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [showCombatLogs, setShowCombatLogs] = useState(false);
+  const [showAIDebug, setShowAIDebug] = useState(false);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [aiActionMessage, setAiActionMessage] = useState<string | null>(null);
   const [damageFlashTarget, setDamageFlashTarget] = useState<'player' | 'opponent' | null>(null);
@@ -57,41 +63,60 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     }
   }, [matchState.phase, matchState.winner]);
 
-  // Handle AI Turns with sequential visual pacing
+  // Step-by-step genuine AI turn execution
   useEffect(() => {
+    let timeoutId: any = null;
+
     if (
       matchState.phase === 'playing' &&
       matchState.activePlayer === 'opponent' &&
       !isAIProcessing
     ) {
       setIsAIProcessing(true);
-      setAiActionMessage('Evaluating battlefield & calculating moves...');
 
-      const step1 = setTimeout(() => {
-        setAiActionMessage('Channeling the Veil & playing cards...');
-      }, 700);
-
-      const step2 = setTimeout(() => {
+      const runNextStep = () => {
         setMatchState((current) => {
-          const nextState = executeAITurn(current, 'Tactician');
-          setDamageFlashTarget('player');
-          setTimeout(() => setDamageFlashTarget(null), 600);
+          if (current.phase === 'game_over' || current.activePlayer !== 'opponent') {
+            setIsAIProcessing(false);
+            setAiActionMessage(null);
+            return current;
+          }
+
+          const { action, candidates } = getNextAIAction(current, 'Tactician');
+          aiDebugManager.recordDecision(current.turnNumber, action, candidates);
+          setAiActionMessage(action.actionSummary);
+
+          // Audio & visual cues per action
+          if (action.type === 'PLAY_CARD') {
+            audio.playCardPlay();
+          } else if (action.type === 'ATTACK_HERO') {
+            audio.playAttack();
+            setDamageFlashTarget('player');
+            setTimeout(() => setDamageFlashTarget(null), 500);
+          } else if (action.type === 'ATTACK_MINION') {
+            audio.playAttack();
+          }
+
+          const nextState = executeSingleAIAction(current, action);
+
+          if (action.type === 'END_TURN' || nextState.activePlayer !== 'opponent') {
+            setIsAIProcessing(false);
+            setAiActionMessage(null);
+          } else {
+            // Schedule next atomic action after 850ms so player can follow
+            timeoutId = setTimeout(runNextStep, 850);
+          }
+
           return nextState;
         });
-        setAiActionMessage('Executing attacks and concluding turn...');
-      }, 1400);
-
-      const step3 = setTimeout(() => {
-        setIsAIProcessing(false);
-        setAiActionMessage(null);
-      }, 2000);
-
-      return () => {
-        clearTimeout(step1);
-        clearTimeout(step2);
-        clearTimeout(step3);
       };
+
+      timeoutId = setTimeout(runNextStep, 600);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [matchState.activePlayer, matchState.phase, isAIProcessing]);
 
   // Player Hand click
@@ -226,8 +251,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
           )}
         </div>
 
-        {/* Combat Logs toggle & Exit */}
+        {/* Combat Logs, AI Inspector toggle & Exit */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAIDebug(true)}
+            className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-1.5 transition-colors font-mono"
+            title="Open AI Inspector (Dev)"
+          >
+            <Bug className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">AI Inspector</span>
+          </button>
           <button
             onClick={() => setShowCombatLogs(!showCombatLogs)}
             className="px-3 py-1.5 rounded-lg glass-panel hover:border-indigo-400 text-xs text-slate-300 flex items-center gap-1.5 transition-colors"
@@ -489,6 +522,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
           </div>
         </div>
       )}
+      {/* AI Inspector Dev Modal */}
+      <AIDebugModal
+        isOpen={showAIDebug}
+        onClose={() => setShowAIDebug(false)}
+      />
     </div>
   );
 };

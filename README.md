@@ -1,38 +1,75 @@
-# VEILBOUND — Digital Collectible Card Game
+# 🌌 VEILBOUND 2 — Complete Sequel-Level Overhaul
+
+[![Live Demo](https://img.shields.io/badge/PLAY%20NOW-Veilbound%202%20Live-f59e0b?style=for-the-badge&logo=googlechrome&logoColor=white)](https://dipidyl.github.io/veilbound/)
+[![Build Status](https://img.shields.io/badge/Build-Passing-emerald?style=for-the-badge)](https://github.com/DiPiDyl/veilbound/actions)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 > *"Reality is a tapestry; you only need to pull the right thread."*  
 > — Lyra Voss, The Veilwalker
 
-**VEILBOUND** is an original digital collectible card game (CCG) built from the ground up around dynamic planar reality shifts, temporal echo mechanics, and player-driven destiny progression. It combines the strategic depth and tactile feel of high-end card games with roguelite expedition runs, a comprehensive deck builder, interactive pack openings, and a creative **Card Lab** where players can forge custom cards and immediately playtest them in a live sandbox arena.
+### 🎮 **[CLICK HERE TO PLAY VEILBOUND 2 NOW IN YOUR BROWSER](https://dipidyl.github.io/veilbound/)**
+
+**VEILBOUND 2** is a monumental sequel-level transformation of the digital collectible card game built around planar reality shifts, temporal echo cascades, and autonomous AI combat. Experience a genuine competitive experience featuring a **10-Player Auto-Battler**, **Real Enemy AI Decision Engine**, **Handcrafted Tactical Puzzles**, **Structured Planar Progression**, and **Distinct Frame Art Directions**.
 
 ---
 
-## 🌟 The Core Vision & Unique Innovations
+## 🚀 What's New in VEILBOUND 2?
 
-Unlike traditional digital CCGs that rely strictly on mana curve efficiency and static board states, VEILBOUND introduces three interconnected signature systems that constantly reshape the tactical landscape:
+### 1. ⚔️ Real Enemy AI Decision Engine & Live Debug Inspector
+No random button-clicking or canned scripts. The AI in VEILBOUND 2 is powered by an autonomous utility-scoring decision matrix:
+- **Lethal Calculation**: Evaluates immediate board and hand combinations to finish off heroes.
+- **High-Value Trading**: Quantifies minion trades using effective health, attack ratios, and keyword threats (Divine Shield, Lifesteal, Poison).
+- **Face Aggression**: Pushes deliberate face damage when ahead on tempo or racing against control archetypes.
+- **Mana-Curve Summons**: Prioritizes curve plays, synergies, and hero powers before passing.
+- **Deliberate Visual Pacing**: Actions execute one-by-one with 850ms cadence, complete with audio cues, damage flashes, and combat log entries.
+- **AI Debug Inspector**: Open the in-game inspector during any match to view candidate actions, utility scores, and exact reasoning.
+- **Automated AI Test Suite**: Includes 5 verified automated test benchmarks (Attack Ready Minions, Direct Face Attack, Favorable Minion Trade, Lethal Calculation, Clean Turn Ending) plus a 100% autonomous 30-turn AI vs AI match simulation.
 
-### 1. The Veil (Shifting Reality State)
-Every match is fought at the threshold of the physical realm and the supernatural expanse known as **The Veil**. The battlefield dynamically transitions across five distinct planar states:
-- **Calm**: Reality is stable. Standard rules apply with no planar distortions.
-- **Wild**: Raw erratic energy floods the arena. Damage spells deal +1 bonus damage and battlecries surge with primal fury.
-- **Corrupted**: The veil between life and oblivion thins. Fallen minions yield residual Echoes to their commander, and wraiths gain heightened attack.
-- **Celestial**: Radiant starlight descends upon the field. All healing effects gain +2 restored Health, and cards costing 5+ Mana cost 1 less.
-- **Fractured**: Causality splinters. At the start of each turn, a random card in hand has its mana cost permanently reduced by 1.
+### 2. 🏆 Veilbound Battlegrounds (10-Player Auto-Battler)
+A completely overhauled competitive auto-battler mode replacing legacy sequential combat:
+- **10 Participants**: You face 9 autonomous AI players in a persistent lobby with live health tracking, placement calculation, and eliminations.
+- **The Rift Market**: Economy built on planar **Shards** — recruit units for 3 Shards, sell/release for 1 rebate, refresh for 1, freeze/lock tavern rolls, and level up your Tavern Tier from 1 to 6.
+- **6 Battlegrounds Factions**:
+  - 🌿 *Thornbloom*: Deathrattle token swarms and battlefield overgrowth.
+  - 🔥 *Ashforged*: Retaliation damage, slag armor, and explosive burst.
+  - 💀 *Wraithkin*: Reborn units, spectral thralls, and soul harvest scaling.
+  - ⭐ *Starborn*: Radiant divine shields and celestial starfire.
+  - ⚙️ *Clockwork*: Scaled stat ramp and mechanized attack recursion.
+  - 🌀 *Riftborn*: Random planar spells, stat morphs, and reality rifts.
+- **Tactical Left-to-Right Combat**: Deterministic auto-combat respecting positioning order, Taunt barriers, Divine Shields, and Reborns.
+- **The Final Duel**: Dramatic cinematic confrontation when only two survivors remain.
 
-Cards possess the **Veilshift** keyword to steer the Veil towards favorable states, unlock conditional bonuses (*"If the Veil is Celestial, gain Divine Shield"*), or trigger reactive detonations whenever reality shifts.
+### 3. 🧩 Veilbound Tactical Puzzles (6 Handcrafted Chapters)
+Test your card mastery in bespoke single-turn planar brain teasers:
+- **Chapter 1: The First Echo** — Master mana curve, charge strikes, and basic damage math.
+- **Chapter 2: Through the Veil** — Exploit Wild and Corrupted reality shifts to amplify spell thresholds.
+- **Chapter 3: The Broken Clock** — Overcome impassable Taunt walls with temporal repositioning and charge rushes.
+- **Chapter 4: Garden of Giants** — Defeat colossal behemoths using poisonous sporelings and divine shield pops.
+- **Chapter 5: The Hollow Star** — Navigate sacrificial deathrattle cascades to discover surprise lethal lines.
+- **Chapter 6: The Final Rift** — The ultimate 1-turn puzzle requiring multi-step echo combos and perfect sequencing.
+- Earn 1 to 3 stars, utilize dynamic hints, reset instantly, and claim gold/essence rewards upon completion.
 
-### 2. The Echo Pool (Memory of Previous Actions)
-Actions leave behind metaphysical imprints. Cards with the **Echo** keyword generate charges in your **Echo Pool**, while spells cache memory fragments of their effects. Cards with **Consume** spend Echoes to trigger overwhelming bonus strikes, summon titan avatars, or replay previous spells.
+### 4. 📈 Structured Planar Progression & Milestone Unlocks
+No overwhelming feature overload on day one. Beginners embark on a rewarding onboarding journey:
+- **Level 1 (Planar Initiate)**: Start with Binder *Lyra Voss*, the Aetherbound starter deck, and core 1v1 duels.
+- **Level 2 (Archivist Apprentice)**: Unlock the **Collection Vault** and **Deck Builder** (+100 Gold, +50 Essence).
+- **Level 3 (Flamebound Disciple)**: Unlock Binder *Kael Drake* (Ashen Citadel) and the **Card Workshop** (+150 Gold, +75 Essence).
+- **Level 4 (Relic Seeker)**: Unlock Binder *Mira Thorn* (Viridian Hive) and **Booster Packs** (+200 Gold, +100 Essence).
+- **Level 5 (Tactical Mind)**: Unlock Binder *Orin Vale* (Chronocast Archive) and **Tactical Puzzles** (+250 Gold, +125 Essence).
+- **Level 6 (Arena Gladiator)**: Unlock Binder *Nox* (Umbral Remnant) and **Veilbound Battlegrounds** (+300 Gold, +150 Essence).
+- **Level 7 (Ascended Sovereign)**: Unlock Binder *Seraphine* (Astral Ascendancy) and **The Veil Expedition** (+500 Gold, +250 Essence).
+- Features celebratory confetti-filled level-up modals with immediate reward payouts.
 
-### 3. The Destiny Track (Dynamic Archetype Evolution)
-Rather than locking decks into a single rigid strategy, how you pilot your cards moves you along five distinct **Destinies**:
-- ⚔️ **The Conqueror**: Advanced through aggressive minion attacks directly against heroes. Unlocks pierce damage and attack auras.
-- 📜 **The Archivist**: Advanced through card draws, discovery, and spell chains. Unlocks hand expansions and spell discounts.
-- 🛡️ **The Warden**: Advanced through armor accumulation, taunt survival, and healing. Unlocks turn-start armor and damage mitigation shields.
-- 🌌 **The Voidwalker**: Advanced through shifting the Veil. Unlocks planar healing, echo floods, and AoE reality bursts.
-- 💀 **The Revenant**: Advanced through minion deaths and sacrificial rites. Unlocks double deathrattle triggers and spectral shade resurrections.
-
-Milestones at 5, 10, and 15 points trigger passive hero augmentations, transforming familiar decks into bespoke engines.
+### 5. 🎨 Distinct Card Framing & Battlefield VFX
+Every card type now possesses a bespoke visual silhouette:
+- **Minions**: Classical planar portal frame with tribal ribbons.
+- **Spells**: Arcanum circular parchment with incantation runes.
+- **Relics**: Ancient runic pedestal with shimmering crystalline core.
+- **Weapons**: Forged metallic angular framing with blade bevels.
+- **Rituals**: Chrono-hourglass border with countdown charge pips.
+- **Events**: Celestial cosmic banner with sweeping environmental glows.
+- **Champions**: Ornate gold-leaf regal heraldry.
+- **Combat Feel**: Floating damage numerals, screen shakes, and audible strike impacts for every clash.
 
 ---
 
@@ -49,104 +86,49 @@ Milestones at 5, 10, and 15 points trigger passive hero augmentations, transform
 
 ---
 
-## 🃏 Card Database & Keywords
+## 🗺️ Game Modes Summary
 
-VEILBOUND includes a starter pool of **130+ distinct, balanced cards** spanning:
-- **Minions**: Battlefield units with distinct tribes (*Wraiths, Thornlings, Ash Knights, Starborn, Veil Beasts, Clockwork Constructs, Ancient Spirits, Riftborn, Celestials*).
-- **Spells**: Immediate, targeted, or sweeping planar incantations.
-- **Relics**: Persistent enchanted structures providing continuous passive benefits or responsive triggers.
-- **Weapons**: Binder-equipped armaments with attack values and durability counters.
-- **Rituals**: Delayed cards with countdown counters (*Countdown: 3*) charging each turn until an apocalyptic climax is unleashed.
-- **Events**: Global environmental cards altering match rules for 2 turns (*e.g., "The Neutral Summit: Minions cannot attack Binders"*).
-- **Champions**: Unique legendary commanders with match-defining game rules.
-
-### Keywords
-- `Taunt`, `Rush`, `Charge`, `Lifesteal`, `Divine Shield`, `Deathrattle`, `Battlecry`, `Stealth`, `Freeze`, `Poison`, `Discover`
-- `Veilshift`: Alters the Veil State towards a target or advances the planar dial.
-- `Echo`: Generates charges in the Echo Pool or caches replayable spell fragments.
-- `Consume`: Spends accumulated Echo points for bonus effects.
-- `Ritual`: Counts down each round before unleashing a devastating climax.
-- `Forecast`: Grants modifiers, buffs, or cost reductions to the next played card of a designated type.
-- `Corrupt`: Triggers empowered secondary effects if the Veil is Corrupted.
-- `Sacrifice`: Destroys an allied unit as an alternate cost for massive power.
-
----
-
-## 🗺️ Roguelite PvE Mode: The Veil Expedition
-
-Embark on branching planar expeditions through procedurally generated node maps:
-- **Combat & Elite Encounters**: Battle distinct AI foes (*Cinder Knight, Spore Tender, Grave Robber, Slag Gargoyle, Veil Phantom*).
-- **Narrative Choice Events**: 30+ branching story dilemmas with risk/reward outcomes (*The Whispering Monolith, Slag Pit Blacksmith, Catacomb Altar, Broken Mirror Chamber*).
-- **Treasure Relics**: Draft from 25+ passive artifacts (*Glass Heart, Broken Compass, Memory Crystal, Chronometer of Haste, Singularity Stone*).
-- **Major Archon Bosses**: Confront memorable boss encounters with unique AI mechanics:
-  - *The Mirror Queen*: Distorts reality and mirrors player spells.
-  - *The Hollow King*: Summons unending legions of undead thralls.
-  - *The Collector*: Hoards ancient relics and steals player echoes.
-  - *The Garden Mind*: Constantly blooms suffocating spore swarms.
-  - *The Clockmaker*: Accelerates temporal countdowns and locks player mana crystals.
-  - *The Star Eater*: Devours high-cost celestial starlight.
-
----
-
-## 🧪 Card Lab & Interactive Sandbox Arena
-
-VEILBOUND features a comprehensive **Card Lab** that elevates card creation into an active gameplay tool:
-- **Card Creator**: Customize Name, Faction, Type, Rarity, Mana, Stats, Keywords, Effect Scripts, and Flavor Text.
-- **Live Playtest Sandbox**: Click **Playtest in Sandbox** to instantly launch your custom card into an isolated duel against an automated Target Dummy with live combat logging, custom starting mana, and manual Veil shifting!
-- **Share Codes**: Export and import custom creations via base64 JSON codes.
-
----
-
-## 📦 Pack Opening & Economy
-
-- **Authentic Physical Anticipation**: Select packs, hover/tilt with 3D depth, tear open the seal, reveal mystery card backs, and flip to reveal rarity glows and foil shimmer effects.
-- **Pack Types**: *Planar Echoes Pack*, *Faction Citadel Pack*, *Veil Shifter Cache*, *Ancient Reliquary Cache*, and *Celestial Nova Mythic Vault*.
-- **Economy**: Earn Gold through battles, quests, and expeditions; disenchant duplicate cards into Essence to craft missing cards.
+| Mode | Format | Description |
+| :--- | :--- | :--- |
+| **1v1 Quick Duel** | Standard CCG Duel | Face an autonomous AI opponent across custom battlefields with 3 difficulty settings and real-time AI inspector. |
+| **Battlegrounds** | 10-Player Auto-Battler | Recruit from the Rift Market, trigger 6 faction synergies, and battle through rounds until the Final Duel. |
+| **Tactical Puzzles** | Lethal Puzzles | 6 handcrafted chapters of lethal puzzles challenging your sequencing and rules comprehension. |
+| **The Veil Expedition** | Roguelite Dungeon Run | Procedurally generated node map featuring combat encounters, narrative dilemma events, and 6 Archon bosses. |
+| **Card Workshop** | Creative Sandbox | 4-step card synthesis engine allowing you to forge custom cards and immediately playtest them in a live sandbox arena. |
+| **Relic Vault** | Booster Opening | Realistic 3D card pack opening with seal tearing, rarity glows, and collection unlocking. |
 
 ---
 
 ## 🛠️ Technology Stack & Architecture
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React, Canvas Confetti.
-- **Audio Synthesizer**: Zero-dependency procedural Web Audio API soundscape generating realistic clicks, card swooshes, impacts, shield breaks, chimes, pack bursts, and victory fanfares.
-- **Decoupled Architecture**:
-  - `src/types/`: Strict TypeScript contracts for cards, binders, state, and PvE.
-  - `src/engine/`: Pure deterministic logic for Veil shifts, Echoes, Destiny, Combat, and AI.
-  - `src/data/`: Modular data tables for cards, binders, battlefields, treasures, enemies, and achievements.
-  - `src/services/`: Web Audio procedural sound engine, deck validator, and LocalStorage persistence.
-  - `src/components/`: Reusable, responsive glassmorphism UI components.
+- **Engine**: Pure deterministic TypeScript state engine with zero external game engine bloat.
+- **UI Framework**: React 18, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti.
+- **Audio Synthesizer**: Zero-dependency Web Audio API procedural sound engine with realistic spatial clicks, swooshes, impacts, and fanfares.
+- **Hosting**: GitHub Pages via automated GitHub Actions CI/CD pipeline.
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ (tested on Node.js 24 LTS)
-- npm 9+
-
-### Installation & Run
+## 🚀 Running Locally
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/veilbound.git
+git clone https://github.com/DiPiDyl/veilbound.git
 cd veilbound
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start local development server
 npm run dev
+
+# Run automated AI Combat test suite
+npx tsx src/testRunner.ts
 
 # Build production bundle
 npm run build
-
-# Preview production build
-npm run preview
 ```
-
-Open `http://localhost:3000` in your web browser.
 
 ---
 
 ## 📜 License
-MIT License. Created with passion for original digital card gaming.
+MIT License. Created with passion for deep, original tactical card gaming.

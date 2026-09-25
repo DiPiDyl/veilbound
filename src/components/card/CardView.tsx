@@ -1,8 +1,8 @@
 import React from 'react';
-import { Card, CardRarity } from '../../types/card';
+import { Card, CardRarity, CardType } from '../../types/card';
 import { CardArt } from './CardArt';
 import { FactionEmblem, CardTypeEmblem, RarityEmblem, KeywordBadge } from '../common/EmblemIcons';
-import { Shield, Sword, Heart, Clock, Sparkles } from 'lucide-react';
+import { Shield, Sword, Heart, Clock, Sparkles, Crown, Zap, Flame, BookOpen, Layers } from 'lucide-react';
 import { audio } from '../../services/audioService';
 
 interface CardViewProps {
@@ -25,10 +25,10 @@ export const CardView: React.FC<CardViewProps> = ({
   const getRarityBorder = (rarity: CardRarity) => {
     switch (rarity) {
       case 'Rare': return 'border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]';
-      case 'Epic': return 'border-purple-400 shadow-[0_0_18px_rgba(168,85,247,0.6)]';
-      case 'Legendary': return 'border-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.7)]';
-      case 'Mythic': return 'border-pink-400 shadow-[0_0_30px_rgba(244,63,94,0.85)]';
-      default: return 'border-slate-500 shadow-md';
+      case 'Epic': return 'border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.6)]';
+      case 'Legendary': return 'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.7)]';
+      case 'Mythic': return 'border-rose-400 shadow-[0_0_32px_rgba(244,63,94,0.85)]';
+      default: return 'border-slate-600 shadow-md';
     }
   };
 
@@ -37,6 +37,56 @@ export const CardView: React.FC<CardViewProps> = ({
     md: 'w-48 h-68 text-xs',
     lg: 'w-64 h-92 text-sm'
   }[size];
+
+  // Distinct Frame Families by CardType
+  const getFrameStyling = (type: CardType) => {
+    switch (type) {
+      case 'Spell':
+        return {
+          containerClass: 'rounded-3xl border-t-[3px] border-b-[3px] border-x-[1.5px]',
+          headerGradient: 'from-indigo-950 via-purple-950 to-indigo-950',
+          bodyTexture: 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/80 via-slate-950 to-slate-950'
+        };
+      case 'Weapon':
+        return {
+          containerClass: 'rounded-lg border-[3px] border-amber-600/70',
+          headerGradient: 'from-amber-950 via-stone-900 to-amber-950',
+          bodyTexture: 'bg-gradient-to-b from-stone-950 via-zinc-950 to-slate-950'
+        };
+      case 'Relic':
+        return {
+          containerClass: 'rounded-xl border-[3.5px] border-amber-500/60',
+          headerGradient: 'from-stone-950 via-yellow-950 to-stone-950',
+          bodyTexture: 'bg-gradient-to-b from-stone-900 via-slate-950 to-slate-950'
+        };
+      case 'Ritual':
+        return {
+          containerClass: 'rounded-2xl border-[3px] border-teal-500/70',
+          headerGradient: 'from-teal-950 via-cyan-950 to-slate-950',
+          bodyTexture: 'bg-gradient-to-b from-cyan-950/60 via-slate-950 to-slate-950'
+        };
+      case 'Champion':
+        return {
+          containerClass: 'rounded-2xl border-[4px] border-amber-300 shadow-[0_0_30px_rgba(251,191,36,0.6)]',
+          headerGradient: 'from-amber-900 via-yellow-800 to-amber-950',
+          bodyTexture: 'bg-gradient-to-b from-purple-950/80 via-slate-950 to-slate-950'
+        };
+      case 'Event':
+        return {
+          containerClass: 'rounded-2xl border-[2.5px] border-pink-500/60',
+          headerGradient: 'from-pink-950 via-purple-950 to-slate-950',
+          bodyTexture: 'bg-gradient-to-b from-purple-950 via-slate-950 to-slate-950'
+        };
+      default: // Minion
+        return {
+          containerClass: 'rounded-2xl border-[2.5px]',
+          headerGradient: 'from-slate-950 via-slate-900 to-slate-950',
+          bodyTexture: 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950'
+        };
+    }
+  };
+
+  const frameStyle = getFrameStyling(card.type);
 
   const handleMouseEnter = () => {
     audio.playCardHover();
@@ -48,34 +98,40 @@ export const CardView: React.FC<CardViewProps> = ({
       onMouseEnter={handleMouseEnter}
       className={`
         ${dimensions}
-        relative rounded-2xl border-[2.5px] overflow-hidden flex flex-col select-none cursor-pointer
+        ${frameStyle.containerClass}
+        relative overflow-hidden flex flex-col select-none cursor-pointer
         card-hover-tilt transition-all duration-200
         ${getRarityBorder(card.rarity)}
-        ${isPlayable ? 'ring-4 ring-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.8)] scale-[1.02]' : ''}
+        ${isPlayable ? 'ring-4 ring-emerald-400 shadow-[0_0_22px_rgba(52,211,153,0.9)] scale-[1.02]' : ''}
         ${isSelected ? 'ring-4 ring-amber-400 scale-105 z-20' : ''}
-        bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 shadow-2xl
+        shadow-2xl
       `}
     >
-      {/* Foil overlay for Legendary & Mythic */}
+      {/* Foil shimmer overlay for Legendary & Mythic */}
       {(card.rarity === 'Legendary' || card.rarity === 'Mythic') && (
-        <div className="foil-overlay z-30" />
+        <div className="foil-overlay z-30 pointer-events-none" />
       )}
 
-      {/* Top Header: Faction Emblem, Mana Gem, Name, Rarity */}
-      <div className="relative z-20 flex items-center justify-between px-2 py-1 bg-slate-950/95 border-b border-white/10">
-        {/* Left: Mana Crystal Orb */}
+      {/* Champion Royal Aura */}
+      {card.type === 'Champion' && (
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 z-30" />
+      )}
+
+      {/* Top Header: Mana Gem, Name, Faction & Rarity */}
+      <div className={`relative z-20 flex items-center justify-between px-2 py-1 bg-gradient-to-r ${frameStyle.headerGradient} border-b border-white/10`}>
+        {/* Left: 3D Mana Crystal Orb */}
         <div className="relative -ml-1 flex items-center justify-center">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-600 via-cyan-400 to-sky-200 border-2 border-white font-extrabold text-slate-950 flex items-center justify-center shadow-[0_0_10px_rgba(14,165,233,0.9)] text-xs drop-shadow">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-sky-600 via-cyan-400 to-sky-200 border-2 border-white font-black text-slate-950 flex items-center justify-center shadow-[0_0_12px_rgba(14,165,233,0.9)] text-xs drop-shadow">
             {card.cost}
           </div>
         </div>
 
         {/* Center: Card Name */}
-        <div className="flex-1 px-1.5 font-cinzel font-bold text-slate-100 truncate text-center drop-shadow text-[11px]">
+        <div className="flex-1 px-1.5 font-cinzel font-black text-slate-100 truncate text-center drop-shadow text-[11px]">
           {card.name}
         </div>
 
-        {/* Right: Rarity & Faction Emblems */}
+        {/* Right: Faction & Rarity */}
         <div className="flex items-center gap-1">
           <FactionEmblem faction={card.faction} size="sm" />
           <RarityEmblem rarity={card.rarity} size="sm" />
@@ -94,7 +150,7 @@ export const CardView: React.FC<CardViewProps> = ({
       </div>
 
       {/* Card Body & Description */}
-      <div className="relative z-20 flex-1 p-2 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col justify-between">
+      <div className={`relative z-20 flex-1 p-2 ${frameStyle.bodyTexture} flex flex-col justify-between`}>
         {/* Keyword Badges */}
         {card.keywords && card.keywords.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-1">
