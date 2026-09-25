@@ -262,6 +262,103 @@ class AudioService {
       osc.stop(this.ctx.currentTime + idx * 0.2 + 0.4);
     });
   }
+
+  // Timer Tick
+  public playTimerTick(isUrgent: boolean = false) {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = isUrgent ? 'square' : 'sine';
+    osc.frequency.setValueAtTime(isUrgent ? 880 : 540, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(isUrgent ? 440 : 280, this.ctx.currentTime + 0.06);
+
+    gain.gain.setValueAtTime(this.volume * (isUrgent ? 0.2 : 0.08), this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.06);
+  }
+
+  // Page Turn for Codex
+  public playPageTurn() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(520, this.ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(this.volume * 0.12, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  }
+
+  // Card Flip Reveal
+  public playCardFlip() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(this.volume * 0.18, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.12);
+  }
+
+  // Turn Change
+  public playTurnStart(isPlayer: boolean) {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const freqs = isPlayer ? [440, 660] : [330, 220];
+    freqs.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+
+      gain.gain.setValueAtTime(this.volume * 0.15, this.ctx.currentTime + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(this.ctx.currentTime + idx * 0.08);
+      osc.stop(this.ctx.currentTime + idx * 0.08 + 0.25);
+    });
+  }
+
+  // Button click alias
+  public playButtonClick() {
+    this.playClick();
+  }
 }
 
 export const audio = new AudioService();
+export const audioService = audio;

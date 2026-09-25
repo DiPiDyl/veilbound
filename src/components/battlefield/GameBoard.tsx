@@ -7,6 +7,8 @@ import { VeilIndicator } from './VeilIndicator';
 import { EchoPoolView } from './EchoPoolView';
 import { DestinyTrackView } from './DestinyTrackView';
 import { BattlefieldParticles } from './BattlefieldParticles';
+import { LivingAvatar } from './LivingAvatar';
+import { TurnTimer } from './TurnTimer';
 import { 
   playCardFromHand, 
   attackWithMinion, 
@@ -34,6 +36,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [showCombatLogs, setShowCombatLogs] = useState(false);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [aiActionMessage, setAiActionMessage] = useState<string | null>(null);
+  const [damageFlashTarget, setDamageFlashTarget] = useState<'player' | 'opponent' | null>(null);
 
   const bfTheme = getBattlefieldById(matchState.battlefieldTheme);
 
@@ -43,8 +47,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
       audio.playVictory();
       try {
         confetti({
-          particleCount: 100,
-          spread: 70,
+          particleCount: 120,
+          spread: 80,
           origin: { y: 0.6 }
         });
       } catch (e) {}
@@ -53,7 +57,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     }
   }, [matchState.phase, matchState.winner]);
 
-  // Handle AI Turns
+  // Handle AI Turns with sequential visual pacing
   useEffect(() => {
     if (
       matchState.phase === 'playing' &&
@@ -61,15 +65,32 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
       !isAIProcessing
     ) {
       setIsAIProcessing(true);
-      const timer = setTimeout(() => {
+      setAiActionMessage('Evaluating battlefield & calculating moves...');
+
+      const step1 = setTimeout(() => {
+        setAiActionMessage('Channeling the Veil & playing cards...');
+      }, 700);
+
+      const step2 = setTimeout(() => {
         setMatchState((current) => {
           const nextState = executeAITurn(current, 'Tactician');
-          setIsAIProcessing(false);
+          setDamageFlashTarget('player');
+          setTimeout(() => setDamageFlashTarget(null), 600);
           return nextState;
         });
-      }, 1200);
+        setAiActionMessage('Executing attacks and concluding turn...');
+      }, 1400);
 
-      return () => clearTimeout(timer);
+      const step3 = setTimeout(() => {
+        setIsAIProcessing(false);
+        setAiActionMessage(null);
+      }, 2000);
+
+      return () => {
+        clearTimeout(step1);
+        clearTimeout(step2);
+        clearTimeout(step3);
+      };
     }
   }, [matchState.activePlayer, matchState.phase, isAIProcessing]);
 
@@ -116,6 +137,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     if (selectedMinionId && matchState.activePlayer === 'player') {
       audio.playAttack();
       const updated = attackWithMinion(matchState, selectedMinionId, 'hero');
+      setDamageFlashTarget('opponent');
+      setTimeout(() => setDamageFlashTarget(null), 500);
       setMatchState(updated);
       setSelectedMinionId(null);
     }
@@ -141,6 +164,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     setMatchState(updated);
   };
 
+  // Turn Timeout auto-handler
+  const handleTimeout = () => {
+    if (matchState.activePlayer === 'player' && matchState.phase === 'playing') {
+      handleEndTurn();
+    }
+  };
+
   // Manual Veil Shift in Sandbox mode
   const handleVeilShiftClick = () => {
     if (matchState.isSandboxMode) {
@@ -158,67 +188,56 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
 
       {/* TOP BAR: Opponent Info, Active Events, Menu button */}
       <div className="relative z-10 flex items-center justify-between px-6 py-2 bg-slate-950/80 border-b border-white/10 backdrop-blur-md">
-        {/* Opponent Identity */}
+        {/* Opponent Living Avatar */}
         <div className="flex items-center gap-3">
-          <div
-            onClick={handleEnemyHeroClick}
-            className={`
-              relative w-12 h-12 rounded-full border-2 border-red-500 overflow-hidden cursor-pointer
-              hover:scale-105 transition-transform flex items-center justify-center bg-slate-900 shadow-lg
-              ${selectedMinionId ? 'ring-4 ring-red-400 animate-pulse' : ''}
-            `}
-          >
-            <span className="font-cinzel font-bold text-red-300 text-lg">
-              {matchState.opponent.binder.name[0]}
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="font-cinzel font-bold text-slate-100 text-sm">{matchState.opponent.binder.name}</span>
-              <span className="text-[10px] text-red-400 font-semibold uppercase tracking-wider">{matchState.opponent.binder.title}</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1 text-red-400 font-bold">
-                <Heart className="w-3.5 h-3.5 fill-red-400" />
-                <span>{matchState.opponent.health} / {matchState.opponent.maxHealth}</span>
-              </div>
-              {matchState.opponent.armor > 0 && (
-                <div className="flex items-center gap-1 text-slate-300 font-bold">
-                  <Shield className="w-3.5 h-3.5 fill-slate-300" />
-                  <span>{matchState.opponent.armor}</span>
-                </div>
-              )}
-              <div className="text-slate-400 text-[11px]">
-                Cards in Hand: {matchState.opponent.hand.length}
-              </div>
-            </div>
+          <LivingAvatar
+            binder={matchState.opponent.binder}
+            health={matchState.opponent.health}
+            maxHealth={matchState.opponent.maxHealth}
+            armor={matchState.opponent.armor}
+            isEnemy={true}
+            isActiveTurn={matchState.activePlayer === 'opponent'}
+            isTakingDamage={damageFlashTarget === 'opponent'}
+            isTargetable={!!selectedMinionId}
+            heroPowerUsed={matchState.opponent.heroPowerUsedThisTurn}
+            currentMana={matchState.opponent.currentMana}
+            onAvatarClick={handleEnemyHeroClick}
+          />
+          <div className="text-slate-400 text-xs hidden md:block pl-2 border-l border-slate-700/60">
+            Hand: <span className="font-bold text-slate-200">{matchState.opponent.hand.length}</span> cards
           </div>
         </div>
 
-        {/* Global Events Banner */}
-        <div className="flex items-center gap-2">
-          {matchState.activeEvents.map((ev) => (
-            <div key={ev.instanceId} className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500 text-purple-200 text-xs flex items-center gap-1.5 shadow-lg animate-pulse-slow">
-              <Clock className="w-3.5 h-3.5 text-purple-400" />
-              <span className="font-semibold">{ev.card.name}</span>
-              <span className="text-[10px] opacity-75 font-mono">({ev.remainingTurns} turns)</span>
+        {/* Center: Enemy Action Banner or Global Events */}
+        <div className="flex items-center gap-3">
+          {aiActionMessage ? (
+            <div className="px-4 py-1.5 rounded-full bg-red-950/90 border border-red-500 text-red-200 text-xs font-bold flex items-center gap-2 animate-pulse shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+              <span>OPPONENT: {aiActionMessage}</span>
             </div>
-          ))}
+          ) : (
+            matchState.activeEvents.map((ev) => (
+              <div key={ev.instanceId} className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500 text-purple-200 text-xs flex items-center gap-1.5 shadow-lg animate-pulse-slow">
+                <Clock className="w-3.5 h-3.5 text-purple-400" />
+                <span className="font-semibold">{ev.card.name}</span>
+                <span className="text-[10px] opacity-75 font-mono">({ev.remainingTurns} turns)</span>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Combat Logs toggle & Exit */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCombatLogs(!showCombatLogs)}
-            className="px-3 py-1 rounded-lg glass-panel hover:border-indigo-400 text-xs text-slate-300 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg glass-panel hover:border-indigo-400 text-xs text-slate-300 flex items-center gap-1.5 transition-colors"
           >
             <Scroll className="w-3.5 h-3.5" />
             <span>Battle Log</span>
           </button>
           <button
             onClick={onExit}
-            className="px-3 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-xs text-red-200 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-xs text-red-200 transition-colors"
           >
             Surrender / Exit
           </button>
@@ -226,9 +245,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
       </div>
 
       {/* BATTLEFIELD BOARD CENTER */}
-      <div className="relative z-10 flex-1 flex flex-col justify-between px-8 py-3">
+      <div className="relative z-10 flex-1 flex flex-col justify-between px-8 py-2">
         {/* OPPONENT BOARD ROW */}
-        <div className="flex justify-center items-center gap-3 min-h-[140px] border-b border-white/5 py-2">
+        <div className="flex justify-center items-center gap-3 min-h-[135px] border-b border-white/5 py-1">
           {matchState.opponent.board.length === 0 ? (
             <div className="text-xs text-slate-500 italic">Opponent battlefield is empty</div>
           ) : (
@@ -244,11 +263,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
           )}
         </div>
 
-        {/* CENTER DIVIDER: Veil Indicator & End Turn Button */}
+        {/* CENTER DIVIDER: Turn Timer, Veil Indicator & End Turn Button */}
         <div className="flex items-center justify-between py-1 relative">
-          <div className="w-40" />
+          {/* Left: Turn Timer */}
+          <div className="w-48 flex items-center gap-2">
+            <TurnTimer
+              turnNumber={matchState.turnNumber}
+              activePlayer={matchState.activePlayer}
+              durationSeconds={45}
+              onTimeout={handleTimeout}
+              isPaused={matchState.phase !== 'playing'}
+            />
+          </div>
 
-          {/* Center Veil Dial */}
+          {/* Center: Veil Dial */}
           <div className="flex items-center justify-center">
             <VeilIndicator
               currentState={matchState.veilState}
@@ -257,13 +285,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
             />
           </div>
 
-          {/* End Turn Button & Status */}
-          <div className="w-40 flex justify-end">
+          {/* Right: End Turn Button */}
+          <div className="w-48 flex justify-end">
             <button
               onClick={handleEndTurn}
               disabled={matchState.activePlayer !== 'player' || matchState.phase !== 'playing'}
               className={`
-                px-5 py-2.5 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider
+                px-6 py-2.5 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider
                 transition-all duration-300 shadow-xl flex items-center gap-2
                 ${
                   matchState.activePlayer === 'player'
@@ -279,7 +307,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
         </div>
 
         {/* PLAYER BOARD ROW */}
-        <div className="flex justify-center items-center gap-3 min-h-[140px] border-t border-white/5 py-2">
+        <div className="flex justify-center items-center gap-3 min-h-[135px] border-t border-white/5 py-1">
           {matchState.player.board.length === 0 ? (
             <div className="text-xs text-slate-500 italic">Your battlefield is empty. Play minions from your hand!</div>
           ) : (
@@ -296,12 +324,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
         </div>
       </div>
 
-      {/* BOTTOM AREA: Player Hand, Hero Power, Mana, Echo, Destiny */}
+      {/* BOTTOM AREA: Player Hand, Hero, Mana, Echo, Destiny */}
       <div className="relative z-10 flex flex-col bg-slate-950/90 border-t border-white/10 backdrop-blur-md pt-2 pb-3 px-6">
-        {/* Resource Bar: Echo, Mana Crystals, Destiny */}
+        {/* Resource Bar: Player Avatar, Echo, Mana Crystals, Destiny */}
         <div className="flex items-center justify-between mb-2">
-          {/* Left: Echo Pool & Weapon */}
-          <div className="flex items-center gap-3">
+          {/* Left: Player Avatar & Echo */}
+          <div className="flex items-center gap-4">
+            <LivingAvatar
+              binder={matchState.player.binder}
+              health={matchState.player.health}
+              maxHealth={matchState.player.maxHealth}
+              armor={matchState.player.armor}
+              isEnemy={false}
+              isActiveTurn={matchState.activePlayer === 'player'}
+              isTakingDamage={damageFlashTarget === 'player'}
+              heroPowerUsed={matchState.player.heroPowerUsedThisTurn}
+              currentMana={matchState.player.currentMana}
+              onHeroPowerClick={handleHeroPower}
+            />
+
             <EchoPoolView
               echoCount={matchState.player.echoPool}
               fragments={matchState.player.echoFragments}
@@ -338,7 +379,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
             </span>
           </div>
 
-          {/* Right: Destiny Track & Hero Power */}
+          {/* Right: Destiny Track & Hero Power Button */}
           <div className="flex items-center gap-3">
             <DestinyTrackView track={matchState.player.destinyTrack} />
 

@@ -7,19 +7,22 @@ import { DeckBuilderView } from './components/deckbuilder/DeckBuilderView';
 import { PackOpeningView } from './components/packs/PackOpeningView';
 import { CardLabView } from './components/cardlab/CardLabView';
 import { ExpeditionView } from './components/expedition/ExpeditionView';
+import { FreeForAllView } from './components/freeforall/FreeForAllView';
 import { ProfileView } from './components/profile/ProfileView';
 import { GameBoard } from './components/battlefield/GameBoard';
 import { QuickBattleModal } from './components/menu/QuickBattleModal';
 import { SettingsModal } from './components/menu/SettingsModal';
 import { TutorialModal } from './components/menu/TutorialModal';
+import { CodexModal } from './components/codex/CodexModal';
 import { createInitialMatch } from './engine/gameEngine';
-import { getBinderById } from './data/binders';
+import { getBinderById, BINDERS } from './data/binders';
 import { getDeckCards } from './data/starterDecks';
 import { getCardById } from './data/cards';
 import { DeckDefinition } from './data/starterDecks';
 import { CustomCardDraft } from './types/lab';
 import { PackDefinition } from './data/packs';
 import { Card } from './types/card';
+import { FreeForAllOpponent } from './data/freeForAllEnemies';
 import { audio } from './services/audioService';
 
 export const App: React.FC = () => {
@@ -29,6 +32,23 @@ export const App: React.FC = () => {
   const [isQuickBattleOpen, setIsQuickBattleOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isCodexOpen, setIsCodexOpen] = useState(false);
+
+  // Free-For-All Gauntlet persistent stage
+  const [freeForAllStage, setFreeForAllStage] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('VEILBOUND_FFA_STAGE');
+      return saved ? parseInt(saved, 10) : 1;
+    } catch (e) {
+      return 1;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('VEILBOUND_FFA_STAGE', freeForAllStage.toString());
+    } catch (e) {}
+  }, [freeForAllStage]);
 
   // Synchronize audio settings on mount
   useEffect(() => {
@@ -45,7 +65,7 @@ export const App: React.FC = () => {
     });
   };
 
-  // Launch Duel
+  // Launch Duel (Quick Battle)
   const handleStartDuel = (
     playerBinderId: string,
     playerDeckId: string,
@@ -59,7 +79,6 @@ export const App: React.FC = () => {
     const deckDef = data.decks.find((d) => d.id === playerDeckId) || data.decks[0];
     const playerDeckCards = getDeckCards(deckDef);
 
-    // Opponent deck based on opponent binder starter
     const oppDeckDef = data.decks.find((d) => d.binderId === opponentBinderId) || data.decks[0];
     const oppDeckCards = getDeckCards(oppDeckDef);
 
@@ -75,14 +94,46 @@ export const App: React.FC = () => {
     setIsQuickBattleOpen(false);
   };
 
+  // Launch Free-For-All Gauntlet match
+  const handleStartFreeForAllFight = (opponent: FreeForAllOpponent) => {
+    const playerDeckDef = data.decks[0];
+    const playerBinder = getBinderById(playerDeckDef?.binderId || BINDERS[0].id);
+    const playerDeckCards = getDeckCards(playerDeckDef);
+
+    const match = createInitialMatch(
+      playerBinder,
+      playerDeckCards,
+      opponent.binder,
+      opponent.deckCards,
+      'astral_sanctum'
+    );
+
+    // Set opponent specific health
+    match.opponent.health = opponent.health;
+    match.opponent.maxHealth = opponent.health;
+
+    (match as any).isFreeForAll = true;
+    (match as any).ffaOpponent = opponent;
+
+    setActiveMatch(match);
+  };
+
   // Match Finish
   const handleMatchEnd = (won: boolean, matchState: any) => {
+    const isFFA = (matchState as any)?.isFreeForAll;
+    const ffaOpponent = (matchState as any)?.ffaOpponent as FreeForAllOpponent | undefined;
+
     updateData((prev) => {
       const nextWins = prev.profile.wins + (won ? 1 : 0);
       const nextLosses = prev.profile.losses + (won ? 0 : 1);
-      const goldReward = won ? 50 : 15;
-      const essenceReward = won ? 25 : 5;
-      const xpReward = won ? 120 : 40;
+      let goldReward = won ? 50 : 15;
+      let essenceReward = won ? 25 : 5;
+      let xpReward = won ? 120 : 40;
+
+      // Bonus if Free-for-all victory
+      if (isFFA && won && ffaOpponent?.milestoneReward) {
+        goldReward += ffaOpponent.milestoneReward.gold;
+      }
 
       let nextXp = prev.profile.xp + xpReward;
       let nextLevel = prev.profile.level;
@@ -117,6 +168,10 @@ export const App: React.FC = () => {
         achievements: updatedAchievements
       };
     });
+
+    if (isFFA && won) {
+      setFreeForAllStage((prev) => prev + 1);
+    }
 
     setActiveMatch(null);
   };
@@ -246,6 +301,7 @@ export const App: React.FC = () => {
   // Reset Data
   const handleResetData = () => {
     localStorage.removeItem('VEILBOUND_SAVE_DATA_V1');
+    localStorage.removeItem('VEILBOUND_FFA_STAGE');
     window.location.reload();
   };
 
@@ -261,7 +317,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={`w-screen h-screen flex flex-col bg-veil-dark text-slate-100 overflow-hidden ${data.settings.highContrast ? 'contrast-125' : ''}`}>
+    <div className={`w-screen h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden ${data.settings.highContrast ? 'contrast-125' : ''}`}>
       {/* Global Navigation Header */}
       <TopNav
         currentTab={currentTab}
@@ -279,14 +335,25 @@ export const App: React.FC = () => {
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenTutorial={() => setIsTutorialOpen(true)}
+        onOpenCodex={() => setIsCodexOpen(true)}
       />
 
       {/* Main View Port */}
       <main className="flex-1 overflow-hidden relative">
         {currentTab === 'PLAY' && (
           <PlayHubView
-            onOpenQuickBattle={() => setIsQuickBattleOpen(true)}
+            onOpenQuickBattle={() => setIsQuickBattleOpen(false || true)}
             onNavigateTab={setCurrentTab}
+            onOpenCodex={() => setIsCodexOpen(true)}
+          />
+        )}
+
+        {currentTab === 'FREE FOR ALL' && (
+          <FreeForAllView
+            currentStage={freeForAllStage}
+            onStartMatch={handleStartFreeForAllFight}
+            onBackToMenu={() => setCurrentTab('PLAY')}
+            onResetGauntlet={() => setFreeForAllStage(1)}
           />
         )}
 
@@ -372,6 +439,12 @@ export const App: React.FC = () => {
       <TutorialModal
         isOpen={isTutorialOpen}
         onClose={() => setIsTutorialOpen(false)}
+      />
+
+      {/* The Veilbound Codex Grimoire Modal */}
+      <CodexModal
+        isOpen={isCodexOpen}
+        onClose={() => setIsCodexOpen(false)}
       />
     </div>
   );
