@@ -303,8 +303,9 @@ export const CollectionView: React.FC<CollectionViewProps> = ({
                       <span className="text-[10px] text-slate-400 hover:text-amber-300">Click to Select</span>
                     )}
                     {!isUnlocked && (
-                      <span className="text-[10px] text-red-400 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Locked
+                      <span className="text-[9px] text-amber-400/90 flex items-center gap-1 font-bold">
+                        <Lock className="w-3 h-3 text-red-400" />
+                        <span className="truncate max-w-[110px]">{binder.unlockRequirement.description}</span>
                       </span>
                     )}
                   </div>

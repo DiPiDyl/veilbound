@@ -392,6 +392,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             isEnemy={true}
             isActiveTurn={matchState.activePlayer === 'opponent'}
             isTakingDamage={damageFlashTarget === 'opponent'}
+            heroPowerUsed={matchState.opponent.heroPowerUsedThisTurn}
+            currentMana={matchState.opponent.currentMana}
           />
 
           <div className="flex flex-col">

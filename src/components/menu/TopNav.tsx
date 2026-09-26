@@ -29,6 +29,7 @@ interface TopNavProps {
   onOpenSettings: () => void;
   onOpenTutorial: () => void;
   onOpenCodex: () => void;
+  onOpenBinders?: () => void;
   onOpenAdmin?: () => void;
   progression: PlayerProgressionState;
 }
@@ -43,6 +44,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenSettings,
   onOpenTutorial,
   onOpenCodex,
+  onOpenBinders,
   onOpenAdmin,
   progression
 }) => {
@@ -137,6 +139,21 @@ export const TopNav: React.FC<TopNavProps> = ({
             <span>{essence}</span>
           </div>
         </div>
+
+        {/* The 6 Binders Progression Button */}
+        {onOpenBinders && (
+          <button
+            onClick={() => {
+              audio.playClick();
+              onOpenBinders();
+            }}
+            className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-400/50 text-xs font-black text-amber-300 flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95"
+            title="The 6 Planar Binders"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span className="hidden sm:inline">Binders</span>
+          </button>
+        )}
 
         {/* Codex Grimoire Button */}
         <button

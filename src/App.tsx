@@ -30,6 +30,7 @@ import { ProgressionService, PlayerProgressionState } from './services/progressi
 import { LevelMilestone } from './types/progression';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
 import { AdminPanelModal } from './components/admin/AdminPanelModal';
+import { BinderProgressionModal } from './components/binders/BinderProgressionModal';
 import { BATTLEFIELDS } from './data/battlefields';
 
 export const App: React.FC = () => {
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
+  const [isBindersModalOpen, setIsBindersModalOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isMatchmaking, setIsMatchmaking] = useState(false);
@@ -512,6 +514,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onOpenCodex={() => setIsCodexOpen(true)}
+        onOpenBinders={() => setIsBindersModalOpen(true)}
         onOpenAdmin={() => setIsAdminLoginOpen(true)}
         progression={progression}
       />
@@ -523,6 +526,9 @@ export const App: React.FC = () => {
             onOpenQuickBattle={handleLaunchQuick1v1}
             onNavigateTab={setCurrentTab}
             onOpenCodex={() => setIsCodexOpen(true)}
+            onOpenBindersModal={() => setIsBindersModalOpen(true)}
+            activeBinder={getBinderById(data.profile.activeBinderId || 'lyra-voss')}
+            unlockedBinderIds={data.profile.unlockedBinderIds || ['lyra-voss']}
             progression={progression}
           />
         </div>
@@ -651,6 +657,33 @@ export const App: React.FC = () => {
       <UnlockNotificationModal
         milestone={pendingMilestone}
         onDismiss={() => setPendingMilestone(null)}
+      />
+
+      {/* The 6 Planar Binders Progression Modal */}
+      <BinderProgressionModal
+        isOpen={isBindersModalOpen}
+        onClose={() => setIsBindersModalOpen(false)}
+        unlockedBinderIds={data.profile.unlockedBinderIds || ['lyra-voss']}
+        activeBinderId={data.profile.activeBinderId || 'lyra-voss'}
+        onSelectActiveBinder={(bId) => {
+          updateData((prev) => ({
+            ...prev,
+            profile: { ...prev.profile, activeBinderId: bId }
+          }));
+        }}
+        onUnlockBinder={(bId) => {
+          updateData((prev) => ({
+            ...prev,
+            profile: {
+              ...prev.profile,
+              unlockedBinderIds: Array.from(new Set([...(prev.profile.unlockedBinderIds || ['lyra-voss']), bId]))
+            }
+          }));
+        }}
+        playerLevel={progression.playerLevel}
+        playerWins={data.profile.wins || 0}
+        puzzlesCompleted={2}
+        cardsPlayedTotal={Math.max(25, (data.profile.wins || 0) * 12 + 10)}
       />
 
       {/* Admin Login Modal */}

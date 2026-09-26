@@ -17,6 +17,21 @@ export interface HeroPower {
   soundTrigger: string;
 }
 
+export interface BinderPassive {
+  id: string;
+  name: string;
+  description: string;
+  trigger: 'VeilShift' | 'HeroDamaged' | 'MinionDied' | 'TurnStart' | 'TurnEnd';
+  soundTrigger: string;
+}
+
+export interface BinderUnlockRequirement {
+  type: 'starter' | 'level' | 'puzzles' | 'wins' | 'cards_played';
+  target: number;
+  description: string;
+  reward: string;
+}
+
 export type DestinyType = 
   | 'TheConqueror'   // Aggressive damage dealt to hero & high attacks
   | 'TheArchivist'   // Cards drawn, spells cast, discoveries
@@ -46,7 +61,9 @@ export interface Binder {
   faction: FactionId;
   maxHealth: number;
   startingHealth: number;
+  passive: BinderPassive;
   heroPower: HeroPower;
+  unlockRequirement: BinderUnlockRequirement;
   quote: string;
   lore: string;
   personality: string;

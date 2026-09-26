@@ -182,6 +182,24 @@ export function startTurn(state: MatchState): MatchState {
     isFrozen: false
   }));
 
+  // Binder Passive: Orin Vale - Chronocast Blueprint
+  if (curPlayer.binder.id === 'orin-vale' && curPlayer.hand.length > 0) {
+    const highestIdx = curPlayer.hand.reduce((maxI, c, i, arr) => c.cost > arr[maxI].cost ? i : maxI, 0);
+    if (curPlayer.hand[highestIdx].cost > 0) {
+      curPlayer.hand[highestIdx] = {
+        ...curPlayer.hand[highestIdx],
+        cost: Math.max(0, curPlayer.hand[highestIdx].cost - 1)
+      };
+      logs.push({
+        id: `log-${Date.now()}-orin-passive`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name}'s Chronocast Blueprint discounted ${curPlayer.hand[highestIdx].name} (-1 Mana)!`,
+        tag: 'destiny'
+      });
+    }
+  }
+
   // Advance Rituals in relics
   const updatedRelics: BoardRelic[] = [];
   for (const relic of curPlayer.relics) {
@@ -265,11 +283,34 @@ export function startTurn(state: MatchState): MatchState {
 export function endCurrentTurn(state: MatchState): MatchState {
   if (state.phase === 'game_over') return state;
 
-  const nextActive = state.activePlayer === 'player' ? 'opponent' : 'player';
+  const isPlayer = state.activePlayer === 'player';
+  let curPlayer = isPlayer ? { ...state.player } : { ...state.opponent };
+  const logs = [...state.combatLogs];
+
+  // Binder Passive: Seraphine - Aegis of the Stars
+  if (curPlayer.binder.id === 'seraphine-starforged' && curPlayer.currentMana > 0) {
+    curPlayer.health = Math.min(curPlayer.maxHealth, curPlayer.health + 2);
+    if (curPlayer.board.length > 0) {
+      const lowestAlly = curPlayer.board.reduce((prev, curr) => curr.currentHealth < prev.currentHealth ? curr : prev);
+      lowestAlly.hasDivineShield = true;
+    }
+    logs.push({
+      id: `log-${Date.now()}-seraphine-passive`,
+      turn: state.turnNumber,
+      actor: state.activePlayer,
+      message: `${curPlayer.binder.name}'s Aegis of the Stars granted Divine Shield and +2 Health!`,
+      tag: 'destiny'
+    });
+  }
+
+  const nextActive = isPlayer ? 'opponent' : 'player';
   const nextTurnNumber = state.turnNumber + 1;
 
   const nextState: MatchState = {
     ...state,
+    player: isPlayer ? curPlayer : state.player,
+    opponent: isPlayer ? state.opponent : curPlayer,
+    combatLogs: logs,
     turnNumber: nextTurnNumber,
     activePlayer: nextActive
   };
@@ -346,6 +387,27 @@ export function playCardFromHand(
     // Voidwalker Tier 1: heal 2 on veil shift
     if (curPlayer.destinyTrack.tiersUnlocked.TheVoidwalker >= 1) {
       curPlayer.health = Math.min(curPlayer.maxHealth, curPlayer.health + 2);
+    }
+
+    // Binder Passive: Lyra Voss - Veil Resonance
+    if (curPlayer.binder.id === 'lyra-voss') {
+      curPlayer = gainEchoes(curPlayer, 1);
+      if (curPlayer.hand.length > 0) {
+        const randIdx = Math.floor(Math.random() * curPlayer.hand.length);
+        if (curPlayer.hand[randIdx].cost > 0) {
+          curPlayer.hand[randIdx] = {
+            ...curPlayer.hand[randIdx],
+            cost: Math.max(0, curPlayer.hand[randIdx].cost - 1)
+          };
+        }
+      }
+      logs.push({
+        id: `log-${Date.now()}-lyra-passive`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name}'s Veil Resonance triggered (+1 Echo, discounted a card in hand)!`,
+        tag: 'veil'
+      });
     }
   }
 
@@ -552,7 +614,7 @@ export function attackWithMinion(
 
   const isPlayer = state.activePlayer === 'player';
   let curPlayer = isPlayer ? { ...state.player } : { ...state.opponent };
-  const enemyPlayer = isPlayer ? { ...state.opponent } : { ...state.player };
+  let enemyPlayer = isPlayer ? { ...state.opponent } : { ...state.player };
   const logs = [...state.combatLogs];
 
   const attacker = curPlayer.board.find(m => m.instanceId === attackerInstanceId);
@@ -598,6 +660,26 @@ export function attackWithMinion(
       message: `${attacker.card.name} attacked ${enemyPlayer.binder.name} for ${dmg} damage!`,
       tag: 'attack'
     });
+
+    // Binder Passive: Kael Drake - Molten Retaliation
+    if (enemyPlayer.binder.id === 'kael-drake') {
+      enemyPlayer.armor += 1;
+      let targetName = curPlayer.binder.name;
+      if (curPlayer.board.length > 0) {
+        const retTarget = curPlayer.board[Math.floor(Math.random() * curPlayer.board.length)];
+        retTarget.currentHealth -= 1;
+        targetName = retTarget.card.name;
+      } else {
+        curPlayer.health -= 1;
+      }
+      logs.push({
+        id: `log-${Date.now()}-kael-passive`,
+        turn: state.turnNumber,
+        actor: state.activePlayer === 'player' ? 'opponent' : 'player',
+        message: `${enemyPlayer.binder.name}'s Molten Retaliation dealt 1 damage to ${targetName} and gained 1 Armor!`,
+        tag: 'destiny'
+      });
+    }
   } else if (targetType === 'minion' && targetMinionInstanceId) {
     const defender = enemyPlayer.board.find(m => m.instanceId === targetMinionInstanceId);
     if (!defender) return state;
@@ -642,6 +724,50 @@ export function attackWithMinion(
     // Corrupted Veil or Revenant Destiny grants Echoes on death
     if (state.veilState === 'Corrupted' || curPlayer.destinyTrack.tiersUnlocked.TheRevenant >= 1) {
       curPlayer = gainEchoes(curPlayer, deadAllies.length);
+    }
+
+    // Binder Passive: Mira Thorn - Overgrowth
+    if (curPlayer.binder.id === 'mira-thorn') {
+      const survivors = curPlayer.board.filter(m => m.currentHealth > 0);
+      if (survivors.length > 0) {
+        deadAllies.forEach(() => {
+          const buffTarget = survivors[Math.floor(Math.random() * survivors.length)];
+          buffTarget.currentAttack += 1;
+          buffTarget.currentHealth += 1;
+          buffTarget.maxHealth += 1;
+        });
+        logs.push({
+          id: `log-${Date.now()}-mira-passive`,
+          turn: state.turnNumber,
+          actor: state.activePlayer,
+          message: `${curPlayer.binder.name}'s Overgrowth triggered! Remaining allies gain +1/+1.`,
+          tag: 'destiny'
+        });
+      }
+    }
+  }
+
+  // Binder Passive: Nox - Soul Siphon
+  const totalDeaths = deadAllies.length + deadEnemies.length;
+  if (totalDeaths > 0) {
+    if (curPlayer.binder.id === 'nox-revenant') {
+      curPlayer = gainEchoes(curPlayer, totalDeaths);
+      if (curPlayer.echoPool >= 4) {
+        curPlayer.health = Math.min(curPlayer.maxHealth, curPlayer.health + 2);
+        logs.push({
+          id: `log-${Date.now()}-nox-passive`,
+          turn: state.turnNumber,
+          actor: state.activePlayer,
+          message: `${curPlayer.binder.name}'s Soul Siphon harvested ${totalDeaths} souls (+${totalDeaths} Echoes, healed 2 HP)!`,
+          tag: 'echo'
+        });
+      }
+    }
+    if (enemyPlayer.binder.id === 'nox-revenant') {
+      enemyPlayer = gainEchoes(enemyPlayer, totalDeaths);
+      if (enemyPlayer.echoPool >= 4) {
+        enemyPlayer.health = Math.min(enemyPlayer.maxHealth, enemyPlayer.health + 2);
+      }
     }
   }
 
@@ -692,26 +818,48 @@ export function activateHeroPower(state: MatchState): MatchState {
     veilState = shiftVeilTo(veilState);
     curPlayer = gainEchoes(curPlayer, 1);
     curPlayer.stats.veilShiftsTriggered += 1;
+    if (curPlayer.hand.length > 0) {
+      const randIdx = Math.floor(Math.random() * curPlayer.hand.length);
+      if (curPlayer.hand[randIdx].cost > 0) {
+        curPlayer.hand[randIdx] = {
+          ...curPlayer.hand[randIdx],
+          cost: Math.max(0, curPlayer.hand[randIdx].cost - 1)
+        };
+      }
+    }
     logs.push({
       id: `log-${Date.now()}-hp-veil`,
       turn: state.turnNumber,
       actor: state.activePlayer,
-      message: `${curPlayer.binder.name} used Veil Infusion! The Veil shifts to ${veilState}.`,
+      message: `${curPlayer.binder.name} activated Veilstep! Veil shifted to ${veilState}, gained 1 Echo and discounted a card in hand.`,
       tag: 'veil'
     });
   } else if (hpType === 'ArmorAndBuff') {
-    curPlayer.armor += 2;
+    curPlayer.armor += 3;
     if (curPlayer.board.length > 0) {
-      curPlayer.board[0].currentHealth += 1;
-      curPlayer.board[0].maxHealth += 1;
+      const targetMinion = curPlayer.board[0];
+      targetMinion.currentHealth += 1;
+      targetMinion.maxHealth += 1;
+      const kw = targetMinion.card.keywords || [];
+      if (!kw.includes('Taunt')) {
+        targetMinion.card = { ...targetMinion.card, keywords: [...kw, 'Taunt'] };
+      }
+      logs.push({
+        id: `log-${Date.now()}-hp-armor`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} activated Ashen Guard (+3 Armor, gave ${targetMinion.card.name} +1 Health & Taunt).`,
+        tag: 'play'
+      });
+    } else {
+      logs.push({
+        id: `log-${Date.now()}-hp-armor`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} activated Ashen Guard (+3 Armor).`,
+        tag: 'play'
+      });
     }
-    logs.push({
-      id: `log-${Date.now()}-hp-armor`,
-      turn: state.turnNumber,
-      actor: state.activePlayer,
-      message: `${curPlayer.binder.name} activated Molten Bastion (+2 Armor).`,
-      tag: 'play'
-    });
   } else if (hpType === 'SummonSpore') {
     if (curPlayer.board.length < 7) {
       curPlayer.board.push({
@@ -742,14 +890,23 @@ export function activateHeroPower(state: MatchState): MatchState {
         isFrozen: false,
         isSilenced: false
       });
+      logs.push({
+        id: `log-${Date.now()}-hp-spore`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} sprouted a 1/1 Sporeling!`,
+        tag: 'play'
+      });
+    } else {
+      curPlayer.board.forEach(m => m.currentAttack += 1);
+      logs.push({
+        id: `log-${Date.now()}-hp-spore-full`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name}'s board is full! Wildbloom grants all allies +1 Attack!`,
+        tag: 'play'
+      });
     }
-    logs.push({
-      id: `log-${Date.now()}-hp-spore`,
-      turn: state.turnNumber,
-      actor: state.activePlayer,
-      message: `${curPlayer.binder.name} sprouted a Sporeling!`,
-      tag: 'play'
-    });
   } else if (hpType === 'SoulHarvest') {
     // Deal 1 damage to lowest health enemy minion or hero
     if (enemyPlayer.board.length > 0) {
@@ -757,7 +914,39 @@ export function activateHeroPower(state: MatchState): MatchState {
       target.currentHealth -= 1;
       if (target.currentHealth <= 0) {
         curPlayer = gainEchoes(curPlayer, 2);
+        // Summon a 1/1 Lost Soul if space
+        if (curPlayer.board.length < 7) {
+          curPlayer.board.push({
+            instanceId: `soul-${Date.now()}`,
+            cardId: 'umb-01',
+            card: {
+              id: 'umb-01',
+              name: 'Lost Soul',
+              faction: 'UmbralRemnant',
+              type: 'Minion',
+              rarity: 'Common',
+              cost: 1,
+              attack: 1,
+              health: 1,
+              keywords: [],
+              description: 'Soul summoned from the veil.',
+              flavorText: 'Whispers from the graveyard.',
+              artworkPlaceholderTheme: 'umbral_specter'
+            },
+            currentAttack: 1,
+            currentHealth: 1,
+            maxHealth: 1,
+            canAttack: false,
+            attacksThisTurn: 0,
+            maxAttacksPerTurn: 1,
+            hasDivineShield: false,
+            isStealthed: false,
+            isFrozen: false,
+            isSilenced: false
+          });
+        }
       }
+      enemyPlayer.board = enemyPlayer.board.filter(m => m.currentHealth > 0);
     } else {
       enemyPlayer.health -= 1;
     }
@@ -765,31 +954,53 @@ export function activateHeroPower(state: MatchState): MatchState {
       id: `log-${Date.now()}-hp-soul`,
       turn: state.turnNumber,
       actor: state.activePlayer,
-      message: `${curPlayer.binder.name} harvested souls for 1 damage!`,
+      message: `${curPlayer.binder.name} channeled Soul Return for 1 damage!`,
       tag: 'play'
     });
   } else if (hpType === 'ForecastIndex') {
     const dr = drawCard(curPlayer);
     curPlayer = dr.newPlayer;
-    logs.push({
-      id: `log-${Date.now()}-hp-chrono`,
-      turn: state.turnNumber,
-      actor: state.activePlayer,
-      message: `${curPlayer.binder.name} indexed the timeline and drew a card!`,
-      tag: 'play'
-    });
+    if (dr.drawnCard && curPlayer.hand.length > 0) {
+      const lastIdx = curPlayer.hand.length - 1;
+      curPlayer.hand[lastIdx] = {
+        ...curPlayer.hand[lastIdx],
+        cost: Math.max(0, curPlayer.hand[lastIdx].cost - 1)
+      };
+      logs.push({
+        id: `log-${Date.now()}-hp-chrono`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} archived the timeline, drawing ${dr.drawnCard.name} (Cost reduced by 1)!`,
+        tag: 'play'
+      });
+    }
   } else if (hpType === 'RadiantBeacon') {
     curPlayer.health = Math.min(curPlayer.maxHealth, curPlayer.health + 2);
-    if (veilState === 'Celestial' && curPlayer.board.length > 0) {
-      curPlayer.board[0].hasDivineShield = true;
-    }
-    logs.push({
-      id: `log-${Date.now()}-hp-radiant`,
-      turn: state.turnNumber,
-      actor: state.activePlayer,
-      message: `${curPlayer.binder.name} channeled Radiant Beacon (+2 Health).`,
-      tag: 'play'
+    curPlayer.board.forEach(m => {
+      m.currentHealth = Math.min(m.maxHealth, m.currentHealth + 2);
     });
+    if (veilState === 'Celestial') {
+      enemyPlayer.board.forEach(m => {
+        if (m.hasDivineShield) m.hasDivineShield = false;
+        else m.currentHealth -= 1;
+      });
+      enemyPlayer.board = enemyPlayer.board.filter(m => m.currentHealth > 0);
+      logs.push({
+        id: `log-${Date.now()}-hp-radiant-celestial`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} summoned Starfall under the Celestial Veil! Healed all allies for 2 and smote all enemies for 1 damage!`,
+        tag: 'veil'
+      });
+    } else {
+      logs.push({
+        id: `log-${Date.now()}-hp-radiant`,
+        turn: state.turnNumber,
+        actor: state.activePlayer,
+        message: `${curPlayer.binder.name} summoned Starfall (+2 Health to all allies).`,
+        tag: 'play'
+      });
+    }
   }
 
   return {
