@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { MatchState } from '../../types/gameState';
 import { BoardMinionView } from './BoardMinionView';
-import { CardView } from '../card/CardView';
+import { CardHand } from './CardHand';
+import { AttackTargetingArrow } from './AttackTargetingArrow';
+import { CombatAnimationOverlay, CombatAnimationEvent } from './CombatAnimationOverlay';
 import { VeilIndicator } from './VeilIndicator';
 import { EchoPoolView } from './EchoPoolView';
 import { DestinyTrackView } from './DestinyTrackView';
@@ -27,16 +29,22 @@ import { getBattlefieldById } from '../../data/battlefields';
 import { audio } from '../../services/audioService';
 import { 
   Shield, Sword, Heart, Sparkles, ChevronRight, RotateCcw, 
-  Clock, Scroll, Award, ArrowRight, Zap, Bug 
+  Clock, Scroll, Award, ArrowRight, Zap, Bug, Minimize2, LogOut
 } from 'lucide-react';
 
 interface GameBoardProps {
   initialState: MatchState;
   onMatchEnd: (won: boolean, matchState: MatchState) => void;
   onExit: () => void;
+  onMinimize?: () => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, onExit }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ 
+  initialState, 
+  onMatchEnd, 
+  onExit,
+  onMinimize 
+}) => {
   const [matchState, setMatchState] = useState<MatchState>(initialState);
   const [isIntroActive, setIsIntroActive] = useState<boolean>(!initialState.isSandboxMode);
   const [selectedMinionId, setSelectedMinionId] = useState<string | null>(null);
@@ -47,7 +55,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
   const [aiActionMessage, setAiActionMessage] = useState<string | null>(null);
   const [damageFlashTarget, setDamageFlashTarget] = useState<'player' | 'opponent' | null>(null);
 
+  // Active combat animation event
+  const [combatAnimation, setCombatAnimation] = useState<CombatAnimationEvent | null>(null);
+
+  // Aiming state for attacking with minions
+  const [aimingState, setAimingState] = useState<{
+    attackerId: string;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    hoveredTarget: { type: 'minion' | 'hero'; id?: string } | null;
+  } | null>(null);
+
   const bfTheme = getBattlefieldById(matchState.battlefieldTheme);
+
+  // Match state ref for asynchronous loops without stale closures
+  const matchStateRef = useRef<MatchState>(matchState);
+  matchStateRef.current = matchState;
+
+  const isAIRunningRef = useRef<boolean>(false);
+  const aiTimeoutRef = useRef<any>(null);
 
   // Trigger Victory confetti
   useEffect(() => {
@@ -65,64 +93,120 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     }
   }, [matchState.phase, matchState.winner]);
 
-  // Step-by-step genuine AI turn execution
+  // Dedicated, resilient AI decision and execution loop
   useEffect(() => {
-    let timeoutId: any = null;
-
-    if (
-      matchState.phase === 'playing' &&
-      matchState.activePlayer === 'opponent' &&
-      !isAIProcessing
-    ) {
-      setIsAIProcessing(true);
-
-      const runNextStep = () => {
-        setMatchState((current) => {
-          if (current.phase === 'game_over' || current.activePlayer !== 'opponent') {
-            setIsAIProcessing(false);
-            setAiActionMessage(null);
-            return current;
-          }
-
-          const { action, candidates } = getNextAIAction(current, 'Tactician');
-          aiDebugManager.recordDecision(current.turnNumber, action, candidates);
-          setAiActionMessage(action.actionSummary);
-
-          // Audio & visual cues per action
-          if (action.type === 'PLAY_CARD') {
-            audio.playCardPlay();
-          } else if (action.type === 'ATTACK_HERO') {
-            audio.playAttack();
-            setDamageFlashTarget('player');
-            setTimeout(() => setDamageFlashTarget(null), 500);
-          } else if (action.type === 'ATTACK_MINION') {
-            audio.playAttack();
-          }
-
-          const nextState = executeSingleAIAction(current, action);
-
-          if (action.type === 'END_TURN' || nextState.activePlayer !== 'opponent') {
-            setIsAIProcessing(false);
-            setAiActionMessage(null);
-          } else {
-            // Schedule next atomic action after 850ms so player can follow
-            timeoutId = setTimeout(runNextStep, 850);
-          }
-
-          return nextState;
-        });
-      };
-
-      timeoutId = setTimeout(runNextStep, 600);
+    // If not opponent's turn or game over, abort AI runner
+    if (matchState.phase !== 'playing' || matchState.activePlayer !== 'opponent') {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+        aiTimeoutRef.current = null;
+      }
+      isAIRunningRef.current = false;
+      setIsAIProcessing(false);
+      setAiActionMessage(null);
+      return;
     }
 
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [matchState.activePlayer, matchState.phase, isAIProcessing]);
+    // Wait until intro is done before AI starts taking actions
+    if (isIntroActive) return;
 
-  // Player Hand click
-  const handleCardClick = (index: number) => {
+    if (isAIRunningRef.current) return;
+    isAIRunningRef.current = true;
+    setIsAIProcessing(true);
+
+    const executeAIStep = () => {
+      const current = matchStateRef.current;
+      if (current.phase === 'game_over' || current.activePlayer !== 'opponent') {
+        isAIRunningRef.current = false;
+        setIsAIProcessing(false);
+        setAiActionMessage(null);
+        return;
+      }
+
+      // Re-evaluate game state dynamically
+      const { action, candidates } = getNextAIAction(current, 'Tactician');
+      aiDebugManager.recordDecision(current.turnNumber, action, candidates);
+      setAiActionMessage(action.actionSummary);
+
+      // Audio & visual cues per action
+      if (action.type === 'PLAY_CARD') {
+        audio.playCardPlay();
+      } else if (action.type === 'ATTACK_HERO') {
+        audio.playAttack();
+        setDamageFlashTarget('player');
+        setTimeout(() => setDamageFlashTarget(null), 500);
+
+        // Find attacker minion for visual animation
+        const attackerMinion = current.opponent.board.find(m => m.instanceId === action.attackerInstanceId);
+        if (attackerMinion) {
+          setCombatAnimation({
+            id: `anim-${Date.now()}`,
+            sourceX: window.innerWidth / 2,
+            sourceY: 180,
+            targetX: window.innerWidth / 2,
+            targetY: window.innerHeight - 100,
+            damage: attackerMinion.currentAttack,
+            archetype: 'Melee'
+          });
+        }
+      } else if (action.type === 'ATTACK_MINION') {
+        audio.playAttack();
+      }
+
+      const nextState = executeSingleAIAction(current, action);
+      setMatchState(nextState);
+
+      if (action.type === 'END_TURN' || nextState.activePlayer !== 'opponent' || nextState.phase === 'game_over') {
+        isAIRunningRef.current = false;
+        setIsAIProcessing(false);
+        setAiActionMessage(null);
+      } else {
+        // Schedule next atomic action after 750ms so player can easily follow the sequence
+        aiTimeoutRef.current = setTimeout(executeAIStep, 750);
+      }
+    };
+
+    aiTimeoutRef.current = setTimeout(executeAIStep, 650);
+
+    return () => {
+      // Do not clear on simple re-renders while AI turn is running
+    };
+  }, [matchState.activePlayer, matchState.phase, isIntroActive]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+    };
+  }, []);
+
+  // End Turn handler
+  const handleEndTurn = useCallback(() => {
+    if (matchStateRef.current.activePlayer !== 'player' || matchStateRef.current.phase !== 'playing') return;
+    audio.playClick();
+    setSelectedMinionId(null);
+    setSelectedCardIndex(null);
+    setAimingState(null);
+    const updated = endCurrentTurn(matchStateRef.current);
+    setMatchState(updated);
+  }, []);
+
+  // Turn Timeout auto-handler
+  const handleTimeout = useCallback(() => {
+    if (matchStateRef.current.phase !== 'playing') return;
+    if (matchStateRef.current.activePlayer === 'player') {
+      handleEndTurn();
+    } else if (matchStateRef.current.activePlayer === 'opponent') {
+      if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+      isAIRunningRef.current = false;
+      setIsAIProcessing(false);
+      setAiActionMessage(null);
+      setMatchState((current) => endCurrentTurn(current));
+    }
+  }, [handleEndTurn]);
+
+  // Play card from hand (Supports drag-to-play & click-to-play)
+  const handlePlayCard = (index: number, targetMinionId?: string) => {
     if (matchState.activePlayer !== 'player' || matchState.phase !== 'playing') return;
 
     const card = matchState.player.hand[index];
@@ -130,45 +214,98 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
 
     if (card.cost > matchState.player.currentMana) {
       audio.playClick();
-      return; // Cannot afford
+      return;
     }
 
     audio.playCardPlay();
-    const updated = playCardFromHand(matchState, index);
+    const updated = playCardFromHand(matchState, index, targetMinionId);
     setMatchState(updated);
     setSelectedCardIndex(null);
   };
 
-  // Minion Attack selection
-  const handleMinionClick = (minionId: string, isFriendly: boolean) => {
+  // Minion Attack selection & aiming arrow handlers
+  const handleMinionMouseDown = (minionId: string, e: React.MouseEvent) => {
     if (matchState.activePlayer !== 'player' || matchState.phase !== 'playing') return;
 
-    if (isFriendly) {
-      const minion = matchState.player.board.find((m) => m.instanceId === minionId);
-      if (minion && minion.canAttack && minion.currentAttack > 0) {
-        setSelectedMinionId(selectedMinionId === minionId ? null : minionId);
-      }
-    } else {
-      // Enemy minion clicked as target
-      if (selectedMinionId) {
-        audio.playAttack();
-        const updated = attackWithMinion(matchState, selectedMinionId, 'minion', minionId);
-        setMatchState(updated);
-        setSelectedMinionId(null);
-      }
+    const minion = matchState.player.board.find((m) => m.instanceId === minionId);
+    if (minion && minion.canAttack && minion.currentAttack > 0) {
+      setSelectedMinionId(minionId);
+      setAimingState({
+        attackerId: minionId,
+        startX: e.clientX,
+        startY: e.clientY,
+        currentX: e.clientX,
+        currentY: e.clientY,
+        hoveredTarget: null
+      });
     }
   };
 
-  // Enemy Hero clicked as target
-  const handleEnemyHeroClick = () => {
-    if (selectedMinionId && matchState.activePlayer === 'player') {
-      audio.playAttack();
-      const updated = attackWithMinion(matchState, selectedMinionId, 'hero');
+  // Global mousemove while aiming an attack
+  useEffect(() => {
+    if (!aimingState) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setAimingState(prev => prev ? {
+        ...prev,
+        currentX: e.clientX,
+        currentY: e.clientY
+      } : null);
+    };
+
+    const handleMouseUp = () => {
+      if (!aimingState) return;
+
+      const target = aimingState.hoveredTarget;
+      if (target) {
+        if (target.type === 'hero') {
+          handleExecuteAttack(aimingState.attackerId, 'hero');
+        } else if (target.type === 'minion' && target.id) {
+          handleExecuteAttack(aimingState.attackerId, 'minion', target.id);
+        }
+      }
+
+      setAimingState(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [aimingState]);
+
+  // Execute minion attack with animation
+  const handleExecuteAttack = (attackerId: string, targetType: 'hero' | 'minion', targetMinionId?: string) => {
+    const attacker = matchState.player.board.find(m => m.instanceId === attackerId);
+    if (!attacker) return;
+
+    audio.playAttack();
+
+    // Spawn combat animation
+    setCombatAnimation({
+      id: `anim-${Date.now()}`,
+      sourceX: window.innerWidth / 2,
+      sourceY: window.innerHeight - 240,
+      targetX: window.innerWidth / 2,
+      targetY: targetType === 'hero' ? 100 : 250,
+      damage: attacker.currentAttack,
+      archetype: 'Melee'
+    });
+
+    if (targetType === 'hero') {
       setDamageFlashTarget('opponent');
       setTimeout(() => setDamageFlashTarget(null), 500);
+      const updated = attackWithMinion(matchState, attackerId, 'hero');
       setMatchState(updated);
-      setSelectedMinionId(null);
+    } else if (targetMinionId) {
+      const updated = attackWithMinion(matchState, attackerId, 'minion', targetMinionId);
+      setMatchState(updated);
     }
+
+    setSelectedMinionId(null);
   };
 
   // Player Hero Power
@@ -181,28 +318,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
     }
   };
 
-  // End Turn
-  const handleEndTurn = () => {
-    if (matchState.activePlayer !== 'player' || matchState.phase !== 'playing') return;
-    audio.playClick();
-    setSelectedMinionId(null);
-    setSelectedCardIndex(null);
-    const updated = endCurrentTurn(matchState);
-    setMatchState(updated);
-  };
-
-  // Turn Timeout auto-handler
-  const handleTimeout = () => {
-    if (matchState.phase !== 'playing') return;
-    if (matchState.activePlayer === 'player') {
-      handleEndTurn();
-    } else if (matchState.activePlayer === 'opponent') {
-      setIsAIProcessing(false);
-      setAiActionMessage(null);
-      setMatchState((current) => endCurrentTurn(current));
-    }
-  };
-
   // Manual Veil Shift in Sandbox mode
   const handleVeilShiftClick = () => {
     if (matchState.isSandboxMode) {
@@ -212,6 +327,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
       }));
     }
   };
+
+  const enemyTaunts = matchState.opponent.board.filter(m => m.card.keywords?.includes('Taunt'));
+  const hasEnemyTaunt = enemyTaunts.length > 0;
 
   return (
     <div className={`relative w-full h-screen bg-gradient-to-b ${bfTheme.bgGradient} flex flex-col justify-between overflow-hidden select-none`}>
@@ -228,10 +346,44 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
       {/* Dynamic Background Particle System */}
       <BattlefieldParticles veilState={matchState.veilState} />
 
-      {/* TOP BAR: Opponent Info, Active Events, Menu button */}
+      {/* Combat Animation Overlay (Strikes, Spells, Damage numbers) */}
+      <CombatAnimationOverlay
+        activeAnimation={combatAnimation}
+        onAnimationComplete={() => setCombatAnimation(null)}
+      />
+
+      {/* Attack Targeting Arrow */}
+      {aimingState && (
+        <AttackTargetingArrow
+          startX={aimingState.startX}
+          startY={aimingState.startY}
+          currentX={aimingState.currentX}
+          currentY={aimingState.currentY}
+          isOverValidTarget={aimingState.hoveredTarget !== null}
+        />
+      )}
+
+      {/* TOP BAR: Opponent Info, Active Events, Minimize & Settings */}
       <div className="relative z-10 flex items-center justify-between px-6 py-2 bg-slate-950/80 border-b border-white/10 backdrop-blur-md">
         {/* Opponent Living Avatar */}
-        <div className="flex items-center gap-3">
+        <div 
+          className="flex items-center gap-3 cursor-pointer"
+          onMouseEnter={() => {
+            if (aimingState && !hasEnemyTaunt) {
+              setAimingState(prev => prev ? { ...prev, hoveredTarget: { type: 'hero' } } : null);
+            }
+          }}
+          onMouseLeave={() => {
+            if (aimingState?.hoveredTarget?.type === 'hero') {
+              setAimingState(prev => prev ? { ...prev, hoveredTarget: null } : null);
+            }
+          }}
+          onClick={() => {
+            if (selectedMinionId && !hasEnemyTaunt) {
+              handleExecuteAttack(selectedMinionId, 'hero');
+            }
+          }}
+        >
           <LivingAvatar
             binder={matchState.opponent.binder}
             health={matchState.opponent.health}
@@ -240,113 +392,167 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
             isEnemy={true}
             isActiveTurn={matchState.activePlayer === 'opponent'}
             isTakingDamage={damageFlashTarget === 'opponent'}
-            isTargetable={!!selectedMinionId}
-            heroPowerUsed={matchState.opponent.heroPowerUsedThisTurn}
-            currentMana={matchState.opponent.currentMana}
-            onAvatarClick={handleEnemyHeroClick}
           />
-          <div className="text-slate-400 text-xs hidden md:block pl-2 border-l border-slate-700/60">
-            Hand: <span className="font-bold text-slate-200">{matchState.opponent.hand.length}</span> cards
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-cinzel font-bold text-sm text-slate-100">{matchState.opponent.binder.name}</span>
+              <span className="text-[10px] font-mono bg-purple-950/80 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
+                Opponent (AI)
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400">{matchState.opponent.hand.length} Cards in Hand • {matchState.opponent.deck.length} in Deck</span>
           </div>
         </div>
 
-        {/* Center: Enemy Action Banner or Global Events */}
-        <div className="flex items-center gap-3">
-          {aiActionMessage ? (
-            <div className="px-4 py-1.5 rounded-full bg-red-950/90 border border-red-500 text-red-200 text-xs font-bold flex items-center gap-2 animate-pulse shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-              <span>OPPONENT: {aiActionMessage}</span>
-            </div>
-          ) : (
-            matchState.activeEvents.map((ev) => (
-              <div key={ev.instanceId} className="px-3 py-1 rounded-full bg-purple-950/80 border border-purple-500 text-purple-200 text-xs flex items-center gap-1.5 shadow-lg animate-pulse-slow">
-                <Clock className="w-3.5 h-3.5 text-purple-400" />
-                <span className="font-semibold">{ev.card.name}</span>
-                <span className="text-[10px] opacity-75 font-mono">({ev.remainingTurns} turns)</span>
-              </div>
-            ))
+        {/* Center: Live 45-Second Turn Timer */}
+        <div className="flex flex-col items-center">
+          <TurnTimer
+            turnNumber={matchState.turnNumber}
+            activePlayer={matchState.activePlayer}
+            durationSeconds={45}
+            onTimeout={handleTimeout}
+            isPaused={matchState.phase === 'game_over' || isIntroActive}
+          />
+          {isAIProcessing && aiActionMessage && (
+            <span className="text-[11px] font-mono text-purple-300 animate-pulse mt-0.5">
+              🤖 {aiActionMessage}
+            </span>
           )}
         </div>
 
-        {/* Combat Logs, AI Inspector toggle & Exit */}
+        {/* Right: Controls & Navigation */}
         <div className="flex items-center gap-2">
+          {onMinimize && (
+            <button
+              onClick={() => {
+                audio.playClick();
+                onMinimize();
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-transform hover:scale-105 border border-amber-500/30"
+              title="Pause and view menu without forfeiting"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span>Menu</span>
+            </button>
+          )}
+
           <button
-            onClick={() => setShowAIDebug(true)}
-            className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-1.5 transition-colors font-mono"
-            title="Open AI Inspector (Dev)"
+            onClick={() => {
+              audio.playClick();
+              setShowCombatLogs(!showCombatLogs);
+            }}
+            className="p-2 rounded-lg bg-slate-900 border border-white/10 hover:bg-slate-800 text-slate-300"
+            title="Toggle Battle Logs"
           >
-            <Bug className="w-3.5 h-3.5 text-emerald-400" />
+            <Scroll className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => {
+              audio.playClick();
+              setShowAIDebug(true);
+            }}
+            className="p-2 rounded-lg bg-purple-950/60 border border-purple-500/40 hover:bg-purple-900/60 text-purple-300 text-xs font-mono font-bold flex items-center gap-1"
+            title="Inspect AI Decision Weights"
+          >
+            <Bug className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">AI Inspector</span>
           </button>
+
           <button
-            onClick={() => setShowCombatLogs(!showCombatLogs)}
-            className="px-3 py-1.5 rounded-lg glass-panel hover:border-indigo-400 text-xs text-slate-300 flex items-center gap-1.5 transition-colors"
+            onClick={() => {
+              if (window.confirm('Forfeit and exit this match?')) {
+                audio.playClick();
+                onExit();
+              }
+            }}
+            className="p-2 rounded-lg bg-red-950/60 border border-red-500/40 hover:bg-red-900/60 text-red-300"
+            title="Forfeit Match"
           >
-            <Scroll className="w-3.5 h-3.5" />
-            <span>Battle Log</span>
-          </button>
-          <button
-            onClick={onExit}
-            className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-xs text-red-200 transition-colors"
-          >
-            Surrender / Exit
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* BATTLEFIELD BOARD CENTER */}
-      <div className="relative z-10 flex-1 flex flex-col justify-between px-8 py-2">
-        {/* OPPONENT BOARD ROW */}
+      {/* BATTLEFIELD MIDGROUND (The Boards & Veil Core) */}
+      <div className="relative z-10 flex-1 flex flex-col justify-between p-4 max-w-6xl mx-auto w-full">
+        {/* ENEMY BOARD ROW */}
         <div className="flex justify-center items-center gap-3 min-h-[135px] border-b border-white/5 py-1">
           {matchState.opponent.board.length === 0 ? (
-            <div className="text-xs text-slate-500 italic">Opponent battlefield is empty</div>
+            <div className="text-xs text-slate-500 italic">Enemy battlefield is empty.</div>
           ) : (
-            matchState.opponent.board.map((minion) => (
-              <BoardMinionView
-                key={minion.instanceId}
-                minion={minion}
-                isFriendly={false}
-                isValidTarget={!!selectedMinionId}
-                onClick={() => handleMinionClick(minion.instanceId, false)}
-              />
-            ))
+            matchState.opponent.board.map((minion) => {
+              const isTaunt = minion.card.keywords?.includes('Taunt');
+              const isValidTarget = !hasEnemyTaunt || isTaunt;
+
+              return (
+                <div
+                  key={minion.instanceId}
+                  onMouseEnter={() => {
+                    if (aimingState && isValidTarget) {
+                      setAimingState(prev => prev ? { ...prev, hoveredTarget: { type: 'minion', id: minion.instanceId } } : null);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (aimingState?.hoveredTarget?.id === minion.instanceId) {
+                      setAimingState(prev => prev ? { ...prev, hoveredTarget: null } : null);
+                    }
+                  }}
+                  onClick={() => {
+                    if (selectedMinionId && isValidTarget) {
+                      handleExecuteAttack(selectedMinionId, 'minion', minion.instanceId);
+                    }
+                  }}
+                  className={`transition-transform ${isTaunt ? 'ring-2 ring-amber-400 rounded-xl' : ''}`}
+                >
+                  <BoardMinionView
+                    minion={minion}
+                    isFriendly={false}
+                    isSelected={false}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
 
-        {/* CENTER DIVIDER: Turn Timer, Veil Indicator & End Turn Button */}
-        <div className="flex items-center justify-between py-1 relative">
-          {/* Left: Turn Timer */}
-          <div className="w-48 flex items-center gap-2">
-            <TurnTimer
-              turnNumber={matchState.turnNumber}
-              activePlayer={matchState.activePlayer}
-              durationSeconds={45}
-              onTimeout={handleTimeout}
-              isPaused={matchState.phase !== 'playing'}
-            />
+        {/* CENTER DIVIDER: Veil Core Indicator & Turn Button */}
+        <div className="flex items-center justify-between px-8 py-2 relative">
+          {/* Active Global Event Badge */}
+          <div className="flex items-center gap-2">
+            {matchState.activeEvents.map((ev) => (
+              <div
+                key={ev.instanceId}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-950/80 border border-pink-500/50 text-xs text-pink-200"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                <span className="font-semibold">{ev.card.name}</span>
+                <span className="text-[10px] font-mono text-pink-300">({ev.remainingTurns} turns)</span>
+              </div>
+            ))}
           </div>
 
-          {/* Center: Veil Dial */}
-          <div className="flex items-center justify-center">
+          {/* Central Veil Dial */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
             <VeilIndicator
               currentState={matchState.veilState}
-              onShiftRequest={handleVeilShiftClick}
-              isInteractive={matchState.isSandboxMode}
+              onShiftRequest={matchState.isSandboxMode ? handleVeilShiftClick : undefined}
             />
           </div>
 
-          {/* Right: End Turn Button */}
-          <div className="w-48 flex justify-end">
+          {/* End Turn Button */}
+          <div className="flex items-center gap-3">
             <button
               onClick={handleEndTurn}
               disabled={matchState.activePlayer !== 'player' || matchState.phase !== 'playing'}
               className={`
-                px-6 py-2.5 rounded-xl font-cinzel font-bold text-xs uppercase tracking-wider
-                transition-all duration-300 shadow-xl flex items-center gap-2
+                px-6 py-2.5 rounded-xl font-cinzel font-bold text-xs uppercase tracking-widest
+                flex items-center gap-2 transition-all duration-200 shadow-xl
                 ${
                   matchState.activePlayer === 'player'
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white ring-2 ring-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)] active:scale-95'
-                    : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)] scale-105 active:scale-95'
+                    : 'bg-slate-900 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
                 }
               `}
             >
@@ -359,25 +565,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
         {/* PLAYER BOARD ROW */}
         <div className="flex justify-center items-center gap-3 min-h-[135px] border-t border-white/5 py-1">
           {matchState.player.board.length === 0 ? (
-            <div className="text-xs text-slate-500 italic">Your battlefield is empty. Play minions from your hand!</div>
+            <div className="text-xs text-slate-500 italic">Your battlefield is empty. Drag minions from hand onto the board!</div>
           ) : (
             matchState.player.board.map((minion) => (
-              <BoardMinionView
+              <div
                 key={minion.instanceId}
-                minion={minion}
-                isFriendly={true}
-                isSelected={selectedMinionId === minion.instanceId}
-                onClick={() => handleMinionClick(minion.instanceId, true)}
-              />
+                onMouseDown={(e) => handleMinionMouseDown(minion.instanceId, e)}
+                onClick={() => {
+                  if (matchState.activePlayer === 'player' && minion.canAttack && minion.currentAttack > 0) {
+                    setSelectedMinionId(selectedMinionId === minion.instanceId ? null : minion.instanceId);
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                <BoardMinionView
+                  minion={minion}
+                  isFriendly={true}
+                  isSelected={selectedMinionId === minion.instanceId}
+                />
+              </div>
             ))
           )}
         </div>
       </div>
 
-      {/* BOTTOM AREA: Player Hand, Hero, Mana, Echo, Destiny */}
-      <div className="relative z-10 flex flex-col bg-slate-950/90 border-t border-white/10 backdrop-blur-md pt-2 pb-3 px-6">
+      {/* BOTTOM AREA: Player Hand (Fanned Arc), Hero, Mana, Echo, Destiny */}
+      <div className="relative z-20 flex flex-col bg-slate-950/95 border-t border-white/10 backdrop-blur-md pt-2 pb-2 px-6">
         {/* Resource Bar: Player Avatar, Echo, Mana Crystals, Destiny */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           {/* Left: Player Avatar & Echo */}
           <div className="flex items-center gap-4">
             <LivingAvatar
@@ -459,23 +674,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
           </div>
         </div>
 
-        {/* Player Hand Cards */}
-        <div className="flex justify-center items-end gap-2 overflow-x-auto py-1 min-h-[170px]">
-          {matchState.player.hand.map((card, idx) => (
-            <CardView
-              key={`${card.id}-${idx}`}
-              card={card}
-              size="sm"
-              isPlayable={
-                matchState.activePlayer === 'player' &&
-                card.cost <= matchState.player.currentMana &&
-                matchState.phase === 'playing'
-              }
-              isSelected={selectedCardIndex === idx}
-              onClick={() => handleCardClick(idx)}
-            />
-          ))}
-        </div>
+        {/* Physical Fanned Player Hand with Drag-to-Play */}
+        <CardHand
+          cards={matchState.player.hand}
+          currentMana={matchState.player.currentMana}
+          isPlayerTurn={matchState.activePlayer === 'player' && matchState.phase === 'playing'}
+          selectedCardIndex={selectedCardIndex}
+          onSelectCard={(idx) => {
+            if (selectedCardIndex === idx) {
+              handlePlayCard(idx);
+            } else {
+              setSelectedCardIndex(idx);
+            }
+          }}
+          onPlayCard={(idx) => handlePlayCard(idx)}
+        />
       </div>
 
       {/* COMBAT LOGS SLIDE-OUT DRAWER */}
@@ -539,6 +752,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ initialState, onMatchEnd, 
           </div>
         </div>
       )}
+
       {/* AI Inspector Dev Modal */}
       <AIDebugModal
         isOpen={showAIDebug}

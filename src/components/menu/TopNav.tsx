@@ -77,14 +77,11 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
-            <span className="font-cinzel font-extrabold text-lg text-slate-100 tracking-widest drop-shadow">
+            <span className="font-cinzel font-extrabold text-xl text-slate-100 tracking-widest drop-shadow bg-gradient-to-r from-slate-100 via-amber-100 to-amber-300 bg-clip-text text-transparent">
               VEILBOUND
             </span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950">
-              2
-            </span>
           </div>
-          <span className="text-[9px] uppercase tracking-wider text-amber-400 font-bold -mt-1">
+          <span className="text-[9px] uppercase tracking-wider text-amber-400/90 font-bold -mt-0.5">
             Collect • Shift • Ascend
           </span>
         </div>

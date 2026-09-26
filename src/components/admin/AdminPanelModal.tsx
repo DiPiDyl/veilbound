@@ -174,7 +174,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
         <div className="bg-red-950/80 border-b border-red-500/40 p-3.5 px-6 flex items-center justify-between">
           <div className="flex items-center gap-2 text-red-300 font-bold text-sm tracking-wider">
             <Terminal className="w-5 h-5 text-red-400" />
-            <span>VEILBOUND 2.1 — INTERNAL ADMIN CONSOLE</span>
+            <span>VEILBOUND — INTERNAL ADMIN CONSOLE</span>
           </div>
 
           <div className="flex items-center gap-3">

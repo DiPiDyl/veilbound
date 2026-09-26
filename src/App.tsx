@@ -44,6 +44,7 @@ export const App: React.FC = () => {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [isMatchmaking, setIsMatchmaking] = useState(false);
   const [matchedOpponentName, setMatchedOpponentName] = useState<string | null>(null);
+  const [isMatchMinimized, setIsMatchMinimized] = useState(false);
 
   // Progression & Milestones
   const [progression, setProgression] = useState<PlayerProgressionState>(() => ProgressionService.loadProgression());
@@ -417,19 +418,61 @@ export const App: React.FC = () => {
     window.location.reload();
   };
 
-  // If a duel match is actively underway, render GameBoard
-  if (activeMatch) {
+  // If a duel match is actively underway and not minimized, render GameBoard
+  if (activeMatch && !isMatchMinimized) {
     return (
       <GameBoard
         initialState={activeMatch}
-        onMatchEnd={(won) => handleMatchEnd(won, activeMatch)}
-        onExit={() => setActiveMatch(null)}
+        onMatchEnd={(won, state) => {
+          setIsMatchMinimized(false);
+          handleMatchEnd(won, state);
+        }}
+        onExit={() => {
+          setActiveMatch(null);
+          setIsMatchMinimized(false);
+        }}
+        onMinimize={() => setIsMatchMinimized(true)}
       />
     );
   }
 
   return (
     <div className={`w-screen h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden ${data.settings.highContrast ? 'contrast-125' : ''}`}>
+      {/* Active Minimized Match Floating Banner */}
+      {activeMatch && isMatchMinimized && (
+        <div className="relative z-40 bg-gradient-to-r from-amber-950 via-purple-950 to-amber-950 border-b-2 border-amber-400 px-6 py-2 flex items-center justify-between text-xs shadow-2xl animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <span className="text-sm animate-pulse">⚔️</span>
+            <span className="font-cinzel font-bold text-amber-300">
+              1V1 BATTLE IN PROGRESS vs {activeMatch.opponent.binder.name}
+            </span>
+            <span className="text-slate-400 font-mono text-[11px]">
+              (Turn {activeMatch.turnNumber} • {activeMatch.activePlayer === 'player' ? 'Your Turn' : 'Enemy Turn'})
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMatchMinimized(false)}
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-transform hover:scale-105"
+            >
+              Resume Battle
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Forfeit this match?')) {
+                  setActiveMatch(null);
+                  setIsMatchMinimized(false);
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-300 text-xs font-bold"
+            >
+              Forfeit
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Matchmaking Overlay Banner */}
       {isMatchmaking && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 select-none animate-fadeIn">
@@ -473,36 +516,36 @@ export const App: React.FC = () => {
         progression={progression}
       />
 
-      {/* Main View Port */}
+      {/* Main View Port with Persistent Mode Sessions */}
       <main className="flex-1 overflow-hidden relative">
-        {currentTab === 'PLAY' && (
+        <div className={currentTab === 'PLAY' ? 'w-full h-full' : 'hidden'}>
           <PlayHubView
             onOpenQuickBattle={handleLaunchQuick1v1}
             onNavigateTab={setCurrentTab}
             onOpenCodex={() => setIsCodexOpen(true)}
             progression={progression}
           />
-        )}
+        </div>
 
-        {currentTab === 'BATTLEGROUNDS' && (
+        <div className={currentTab === 'BATTLEGROUNDS' ? 'w-full h-full' : 'hidden'}>
           <VeilboundBattlegroundsView
             onBackToMenu={() => setCurrentTab('PLAY')}
             onMatchFinished={handleBattlegroundsFinished}
           />
-        )}
+        </div>
 
-        {currentTab === 'PUZZLES' && (
+        <div className={currentTab === 'PUZZLES' ? 'w-full h-full' : 'hidden'}>
           <PuzzleModeView
             onBackToMenu={() => setCurrentTab('PLAY')}
             onRewardClaimed={handlePuzzleRewardClaimed}
           />
-        )}
+        </div>
 
-        {currentTab === 'EXPEDITION' && (
+        <div className={currentTab === 'EXPEDITION' ? 'w-full h-full' : 'hidden'}>
           <ExpeditionView onRunCompleted={handleExpeditionCompleted} />
-        )}
+        </div>
 
-        {currentTab === 'COLLECTION' && (
+        <div className={currentTab === 'COLLECTION' ? 'w-full h-full' : 'hidden'}>
           <CollectionView
             collection={data.collection}
             essence={data.profile.essence}
@@ -518,9 +561,9 @@ export const App: React.FC = () => {
             onCraftCard={handleCraftCard}
             onDisenchantCard={handleDisenchantCard}
           />
-        )}
+        </div>
 
-        {currentTab === 'DECKS' && (
+        <div className={currentTab === 'DECKS' ? 'w-full h-full' : 'hidden'}>
           <DeckBuilderView
             decks={data.decks}
             collection={data.collection}
@@ -534,25 +577,25 @@ export const App: React.FC = () => {
             onSaveDeck={handleSaveDeck}
             onDeleteDeck={handleDeleteDeck}
           />
-        )}
+        </div>
 
-        {currentTab === 'CARD LAB' && (
+        <div className={currentTab === 'CARD LAB' ? 'w-full h-full' : 'hidden'}>
           <CardLabView
             customCards={data.customCards}
             onSaveCustomCard={handleSaveCustomCard}
             onDeleteCustomCard={handleDeleteCustomCard}
           />
-        )}
+        </div>
 
-        {currentTab === 'PACKS' && (
+        <div className={currentTab === 'PACKS' ? 'w-full h-full' : 'hidden'}>
           <PackOpeningView
             gold={data.profile.gold}
             collection={data.collection}
             onBuyPack={handleBuyPack}
           />
-        )}
+        </div>
 
-        {currentTab === 'PROFILE' && (
+        <div className={currentTab === 'PROFILE' ? 'w-full h-full' : 'hidden'}>
           <ProfileView
             profile={data.profile}
             achievements={data.achievements}
@@ -570,7 +613,7 @@ export const App: React.FC = () => {
               }))
             }
           />
-        )}
+        </div>
       </main>
 
       {/* Quick Battle Configuration Modal (Available as optional dev fallback) */}

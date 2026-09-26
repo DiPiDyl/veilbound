@@ -32,7 +32,7 @@ export const PlayHubView: React.FC<PlayHubViewProps> = ({
 
         <div className="relative z-10 max-w-2xl">
           <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">
-            <Sparkles className="w-4 h-4" /> VEILBOUND 2.1 • The Edge of Reality
+            <Sparkles className="w-4 h-4" /> VEILBOUND • The Edge of Reality
           </div>
           <h1 className="text-3xl lg:text-4xl font-cinzel font-black text-slate-100 mb-2 drop-shadow">
             Command Reality. Slay Champions.

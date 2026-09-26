@@ -1,5 +1,6 @@
 import { MatchState, PlayerState } from '../types/gameState';
 import { Card, BoardMinion } from '../types/card';
+import { getVeilCostReduction } from './veilEngine';
 import { 
   playCardFromHand, 
   attackWithMinion, 
@@ -91,7 +92,7 @@ export function generateCandidateActions(
       }
     } else {
       // Option A: Attack Hero directly
-      let heroScore = personality === 'Aggressor' ? 190 : 155;
+      let heroScore = personality === 'Aggressor' ? 240 : 210;
       if (player.health <= 15) heroScore += 45;
 
       candidates.push({
@@ -104,7 +105,7 @@ export function generateCandidateActions(
 
       // Option B: Trade with player minions
       for (const enemyMinion of player.board) {
-        let tradeScore = 145;
+        let tradeScore = 195;
         const killsTarget = m.currentAttack >= enemyMinion.currentHealth;
         const survives = m.currentHealth > enemyMinion.currentAttack;
         const targetHighThreat = enemyMinion.currentAttack >= 4 || enemyMinion.card.keywords?.includes('Lifesteal');
@@ -136,8 +137,15 @@ export function generateCandidateActions(
 
   // 3. CARD PLAY CANDIDATES FROM HAND
   ai.hand.forEach((card, idx) => {
-    if (card.cost <= ai.currentMana) {
-      let playScore = 80 + (card.cost * 8);
+    let effectiveCost = card.cost;
+    effectiveCost -= getVeilCostReduction(state.veilState, card.cost);
+    if (ai.destinyTrack.tiersUnlocked.TheArchivist >= 2 && card.type === 'Spell') {
+      effectiveCost = Math.max(1, effectiveCost - 1);
+    }
+    effectiveCost = Math.max(0, effectiveCost);
+
+    if (effectiveCost <= ai.currentMana) {
+      let playScore = 80 + (effectiveCost * 6);
 
       if (card.type === 'Minion') {
         if (ai.board.length >= 7) return; // Board full
@@ -149,28 +157,34 @@ export function generateCandidateActions(
           type: 'PLAY_CARD',
           cardIndex: idx,
           utilityScore: playScore,
-          reason: `Summoning minion ${card.name} to expand board presence`,
-          actionSummary: `Play ${card.name} (${card.cost} Mana)`
+          reason: `Summoning minion ${card.name} (${card.attack}/${card.health}) to establish board control`,
+          actionSummary: `Play ${card.name} (${effectiveCost} Mana)`
         });
       } else if (card.type === 'Spell') {
-        // Evaluate spell targets
-        let spellScore = playScore + 10;
-        let bestTargetMinionId: string | undefined = undefined;
+        let spellScore = playScore + 15;
+        let targetMinionId: string | undefined = undefined;
 
-        if (player.board.length > 0) {
-          // Target highest attack player minion
+        // Check if spell is a Buff for friendly minions
+        const isBuff = card.effects?.some(e => e.type === 'Buff' || e.targetType === 'FriendlyMinion');
+        if (isBuff && ai.board.length > 0) {
+          // Buff best friendly minion
+          const bestAlly = ai.board.reduce((prev, curr) => curr.currentAttack > prev.currentAttack ? curr : prev);
+          targetMinionId = bestAlly.instanceId;
+          spellScore += 25;
+        } else if (player.board.length > 0) {
+          // Removal/Damage targeting highest attack enemy minion
           const dangerousTarget = player.board.reduce((prev, curr) => curr.currentAttack > prev.currentAttack ? curr : prev);
-          bestTargetMinionId = dangerousTarget.instanceId;
+          targetMinionId = dangerousTarget.instanceId;
           spellScore += 20;
         }
 
         candidates.push({
           type: 'PLAY_CARD',
           cardIndex: idx,
-          targetMinionInstanceId: bestTargetMinionId,
+          targetMinionInstanceId: targetMinionId,
           utilityScore: spellScore,
-          reason: `Casting spell ${card.name} to alter battlefield balance`,
-          actionSummary: `Cast ${card.name} (${card.cost} Mana)`
+          reason: `Casting ${card.name} (${card.description}) to control the battlefield`,
+          actionSummary: `Cast ${card.name} (${effectiveCost} Mana)`
         });
       } else {
         // Relic, Weapon, Ritual
@@ -179,7 +193,7 @@ export function generateCandidateActions(
           cardIndex: idx,
           utilityScore: playScore,
           reason: `Equipping/channeling ${card.type} ${card.name}`,
-          actionSummary: `Play ${card.name} (${card.cost} Mana)`
+          actionSummary: `Play ${card.name} (${effectiveCost} Mana)`
         });
       }
     }

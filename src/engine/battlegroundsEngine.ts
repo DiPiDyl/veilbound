@@ -26,8 +26,10 @@ export const BG_AI_PERSONALITIES: BGAIPersonalityDef[] = [
   { name: 'Ashen Warlord', binderId: 'kael-drake', personality: 'Molten Berserker', favoredFaction: 'Ashforged' }
 ];
 
+import { draftAIBGCommanders } from '../data/battlegroundsCommanders';
+
 /**
- * Creates 8 participants (1 Player + 7 AIs).
+ * Creates 8 participants (1 Player + 7 varied AI commanders from the pool).
  */
 export function initializeBGParticipants(playerBinderId?: string): BGParticipant[] {
   const chosenBinder = BINDERS.find(b => b.id === playerBinderId) || BINDERS[0];
@@ -53,13 +55,14 @@ export function initializeBGParticipants(playerBinderId?: string): BGParticipant
     }
   ];
 
-  // 7 AI Opponents with distinct identities
-  BG_AI_PERSONALITIES.forEach((ai, idx) => {
-    const binder = BINDERS.find(b => b.id === ai.binderId) || BINDERS[idx % BINDERS.length];
+  // Draft 7 distinct, randomized AI commanders from the pool of 14
+  const draftedCommanders = draftAIBGCommanders();
+  draftedCommanders.forEach((cmd, idx) => {
+    const binder = BINDERS.find(b => b.id === cmd.binderId) || BINDERS[idx % BINDERS.length];
     participants.push({
       id: `bg-ai-${idx + 1}`,
       isHuman: false,
-      name: ai.name,
+      name: `${cmd.avatarIcon} ${cmd.name}`,
       binder,
       health: 35,
       maxHealth: 35,
@@ -71,7 +74,7 @@ export function initializeBGParticipants(playerBinderId?: string): BGParticipant
       bench: [],
       placement: idx + 2,
       isAlive: true,
-      personality: ai.personality,
+      personality: `${cmd.personality} • ${cmd.powerName}`,
       winStreak: 0
     });
   });

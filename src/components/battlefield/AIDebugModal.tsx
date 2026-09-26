@@ -30,7 +30,7 @@ export const AIDebugModal: React.FC<AIDebugModalProps> = ({ isOpen, onClose }) =
           <div className="flex items-center gap-3">
             <Bug className="w-5 h-5 text-emerald-400" />
             <h2 className="text-lg font-mono font-bold text-emerald-300">
-              VEILBOUND 2 — AI COMBAT INSPECTOR (DEV)
+              VEILBOUND — AI COMBAT INSPECTOR (DEV)
             </h2>
             <span className="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 uppercase font-mono">
               Live Decision Loop
